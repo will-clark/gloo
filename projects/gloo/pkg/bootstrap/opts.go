@@ -9,6 +9,8 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 
+	cache_v3 "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	server_v3 "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
@@ -48,8 +50,10 @@ type Consul struct {
 
 type ControlPlane struct {
 	*GrpcService
-	SnapshotCache cache.SnapshotCache
-	XDSServer     server.Server
+	SnapshotCacheV2 cache.SnapshotCache
+	XDSServerV2     server.Server
+	SnapshotCacheV3 cache_v3.SnapshotCache
+	XDSServerV3     server_v3.Server
 }
 
 type ValidationServer struct {

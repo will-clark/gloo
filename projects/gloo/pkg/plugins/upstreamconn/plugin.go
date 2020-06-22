@@ -4,14 +4,18 @@ import (
 	"math"
 	"time"
 
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 
 	types "github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+)
+
+var (
+	_ plugins.UpstreamPlugin = new(Plugin)
 )
 
 type Plugin struct{}
@@ -24,7 +28,7 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
+func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoycluster.Cluster) error {
 
 	cfg := in.GetConnectionConfig()
 	if cfg == nil {
@@ -42,7 +46,7 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	}
 
 	if cfg.TcpKeepalive != nil {
-		out.UpstreamConnectionOptions = &envoyapi.UpstreamConnectionOptions{
+		out.UpstreamConnectionOptions = &envoycluster.UpstreamConnectionOptions{
 			TcpKeepalive: convertTcpKeepAlive(cfg.TcpKeepalive),
 		}
 	}

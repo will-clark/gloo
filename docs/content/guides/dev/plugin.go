@@ -17,7 +17,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	// add these imports to use Envoy's API
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 
 	// add these imports to use Google Compute Engine's API

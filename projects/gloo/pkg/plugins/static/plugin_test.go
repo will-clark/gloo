@@ -9,7 +9,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"

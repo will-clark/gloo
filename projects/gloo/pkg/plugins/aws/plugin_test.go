@@ -1,7 +1,7 @@
 package aws
 
 import (
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	gogoproto "github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"

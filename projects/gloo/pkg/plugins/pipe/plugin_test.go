@@ -1,7 +1,7 @@
 package pipe_test
 
 import (
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 

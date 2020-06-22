@@ -349,28 +349,3 @@ func GetResourceReferences(resources map[string]cache.Resource) map[string]bool 
 	}
 	return out
 }
-
-// GetResourceName returns the resource name for a valid xDS response type.
-func GetResourceName(res cache.ResourceProto) string {
-	switch v := res.(type) {
-	case *endpoint.ClusterLoadAssignment:
-		return v.GetClusterName()
-	case *cluster.Cluster:
-		return v.GetName()
-	case *route.RouteConfiguration:
-		return v.GetName()
-	case *listener.Listener:
-		return v.GetName()
-	// keeping cases below in case- as temporary solution to enable incremental changes
-	case *v2.ClusterLoadAssignment:
-		return v.GetClusterName()
-	case *v2.Cluster:
-		return v.GetName()
-	case *v2.RouteConfiguration:
-		return v.GetName()
-	case *v2.Listener:
-		return v.GetName()
-	default:
-		return ""
-	}
-}

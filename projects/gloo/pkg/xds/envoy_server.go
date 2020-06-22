@@ -23,43 +23,47 @@ import (
 	"google.golang.org/grpc/status"
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/service/cluster/v3"
+	endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/service/endpoint/v3"
+	listener_v3 "github.com/envoyproxy/go-control-plane/envoy/service/listener/v3"
+	route_v3 "github.com/envoyproxy/go-control-plane/envoy/service/route/v3"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 )
 
 // Server is a collection of handlers for streaming discovery requests.
-type EnvoyServer interface {
+type EnvoyServerV2 interface {
 	v2.EndpointDiscoveryServiceServer
 	v2.ClusterDiscoveryServiceServer
 	v2.RouteDiscoveryServiceServer
 	v2.ListenerDiscoveryServiceServer
 }
 
-type envoyServer struct {
+type envoyServerV2 struct {
 	server.Server
 }
 
 // NewServer creates handlers from a config watcher and an optional logger.
-func NewEnvoyServer(genericServer server.Server) EnvoyServer {
-	return &envoyServer{Server: genericServer}
+func NewEnvoyServer(genericServer server.Server) EnvoyServerV2 {
+	return &envoyServerV2{Server: genericServer}
 }
 
-func (s *envoyServer) StreamEndpoints(stream v2.EndpointDiscoveryService_StreamEndpointsServer) error {
+func (s *envoyServerV2) StreamEndpoints(stream v2.EndpointDiscoveryService_StreamEndpointsServer) error {
 	return s.Server.Stream(stream, EndpointTypev2)
 }
 
-func (s *envoyServer) StreamClusters(stream v2.ClusterDiscoveryService_StreamClustersServer) error {
+func (s *envoyServerV2) StreamClusters(stream v2.ClusterDiscoveryService_StreamClustersServer) error {
 	return s.Server.Stream(stream, ClusterTypev2)
 }
 
-func (s *envoyServer) StreamRoutes(stream v2.RouteDiscoveryService_StreamRoutesServer) error {
+func (s *envoyServerV2) StreamRoutes(stream v2.RouteDiscoveryService_StreamRoutesServer) error {
 	return s.Server.Stream(stream, RouteTypev2)
 }
 
-func (s *envoyServer) StreamListeners(stream v2.ListenerDiscoveryService_StreamListenersServer) error {
+func (s *envoyServerV2) StreamListeners(stream v2.ListenerDiscoveryService_StreamListenersServer) error {
 	return s.Server.Stream(stream, ListenerTypev2)
 }
 
-func (s *envoyServer) FetchEndpoints(ctx context.Context, req *v2.DiscoveryRequest) (*v2.DiscoveryResponse, error) {
+func (s *envoyServerV2) FetchEndpoints(ctx context.Context, req *v2.DiscoveryRequest) (*v2.DiscoveryResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
@@ -67,7 +71,7 @@ func (s *envoyServer) FetchEndpoints(ctx context.Context, req *v2.DiscoveryReque
 	return s.Server.Fetch(ctx, req)
 }
 
-func (s *envoyServer) FetchClusters(ctx context.Context, req *v2.DiscoveryRequest) (*v2.DiscoveryResponse, error) {
+func (s *envoyServerV2) FetchClusters(ctx context.Context, req *v2.DiscoveryRequest) (*v2.DiscoveryResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
@@ -75,7 +79,7 @@ func (s *envoyServer) FetchClusters(ctx context.Context, req *v2.DiscoveryReques
 	return s.Server.Fetch(ctx, req)
 }
 
-func (s *envoyServer) FetchRoutes(ctx context.Context, req *v2.DiscoveryRequest) (*v2.DiscoveryResponse, error) {
+func (s *envoyServerV2) FetchRoutes(ctx context.Context, req *v2.DiscoveryRequest) (*v2.DiscoveryResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
@@ -83,7 +87,7 @@ func (s *envoyServer) FetchRoutes(ctx context.Context, req *v2.DiscoveryRequest)
 	return s.Server.Fetch(ctx, req)
 }
 
-func (s *envoyServer) FetchListeners(ctx context.Context, req *v2.DiscoveryRequest) (*v2.DiscoveryResponse, error) {
+func (s *envoyServerV2) FetchListeners(ctx context.Context, req *v2.DiscoveryRequest) (*v2.DiscoveryResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
@@ -91,18 +95,25 @@ func (s *envoyServer) FetchListeners(ctx context.Context, req *v2.DiscoveryReque
 	return s.Server.Fetch(ctx, req)
 }
 
-func (s *envoyServer) DeltaClusters(_ v2.ClusterDiscoveryService_DeltaClustersServer) error {
+func (s *envoyServerV2) DeltaClusters(_ v2.ClusterDiscoveryService_DeltaClustersServer) error {
 	return errors.New("not implemented")
 }
 
-func (s *envoyServer) DeltaRoutes(_ v2.RouteDiscoveryService_DeltaRoutesServer) error {
+func (s *envoyServerV2) DeltaRoutes(_ v2.RouteDiscoveryService_DeltaRoutesServer) error {
 	return errors.New("not implemented")
 }
 
-func (s *envoyServer) DeltaEndpoints(v2.EndpointDiscoveryService_DeltaEndpointsServer) error {
+func (s *envoyServerV2) DeltaEndpoints(v2.EndpointDiscoveryService_DeltaEndpointsServer) error {
 	return errors.New("not implemented")
 }
 
-func (s *envoyServer) DeltaListeners(v2.ListenerDiscoveryService_DeltaListenersServer) error {
+func (s *envoyServerV2) DeltaListeners(v2.ListenerDiscoveryService_DeltaListenersServer) error {
 	return errors.New("not implemented")
+}
+
+type EnvoyServerV3 interface {
+	listener_v3.ListenerDiscoveryServiceServer
+	route_v3.RouteDiscoveryServiceServer
+	endpoint_v3.EndpointDiscoveryServiceServer
+	cluster_v3.ClusterDiscoveryServiceServer
 }

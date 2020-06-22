@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"

@@ -241,7 +241,7 @@ Let's add the functions necessary to implement these interfaces:
 package gce
 
 import (
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -254,7 +254,7 @@ func NewPlugin() *plugin {
 	return &plugin{}
 }
 
-func (*plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *v2.Cluster) error {
+func (*plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *v3.Cluster) error {
 	// we'll add our implementation here
 }
 func (*plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error) {
@@ -302,7 +302,7 @@ import (
 	//...
 
 	// add these imports to use Envoy's API
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 )
 
