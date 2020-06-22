@@ -59,7 +59,7 @@ var _ = Describe("Translate Proxy", func() {
 
 		rep := reporter.NewReporter(ref, proxyClient.BaseClient(), upstreamClient)
 
-		xdsHasher := &xds.ProxyKeyHasher{}
+		xdsHasher := &xds.ProxyKeyHasherV2{}
 		syncer = NewTranslatorSyncer(&mockTranslator{true}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings)
 		snap = &v1.ApiSnapshot{
 			Proxies: v1.ProxyList{

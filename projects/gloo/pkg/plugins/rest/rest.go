@@ -7,24 +7,20 @@ this will grab the parameters from the route extension
 import (
 	"context"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
-
-	"github.com/gogo/protobuf/proto"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/solo-kit/pkg/errors"
-
 	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-
+	"github.com/gogo/protobuf/proto"
 	transformapi "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	glooplugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
-	transformutils "github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/transformation"
-	"github.com/solo-io/go-utils/contextutils"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
+	transformutils "github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/transformation"
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
 type UpstreamWithServiceSpec interface {

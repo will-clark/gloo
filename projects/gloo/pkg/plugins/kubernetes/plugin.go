@@ -17,7 +17,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-var _ discovery.DiscoveryPlugin = new(plugin)
+var (
+	_ discovery.DiscoveryPlugin = new(plugin)
+)
 
 type plugin struct {
 	kube kubernetes.Interface

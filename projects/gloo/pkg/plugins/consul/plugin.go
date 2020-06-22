@@ -6,16 +6,13 @@ import (
 	"net/url"
 	"time"
 
+	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"github.com/hashicorp/consul/api"
 	"github.com/rotisserie/eris"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
-
-	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 )
 

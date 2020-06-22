@@ -166,7 +166,7 @@ func validateCluster(c *envoycluster.Cluster) error {
 	}
 	clusterType := c.GetType()
 	if clusterType == envoycluster.Cluster_STATIC || clusterType == envoycluster.Cluster_STRICT_DNS || clusterType == envoycluster.Cluster_LOGICAL_DNS {
-		if len(c.HiddenEnvoyDeprecatedHosts) == 0 && (c.LoadAssignment == nil || len(c.LoadAssignment.Endpoints) == 0) {
+		if c.LoadAssignment == nil || len(c.LoadAssignment.Endpoints) == 0 {
 			return eris.Errorf("cluster type %v specified but LoadAssignment was empty", clusterType.String())
 		}
 	}

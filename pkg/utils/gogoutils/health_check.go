@@ -6,7 +6,6 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	envoycluster_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/cluster"
 	envoycore_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 )
 
 // Converts between Envoy and Gloo/solokit versions of envoy protos
@@ -149,15 +148,15 @@ func ToEnvoyHealthCheck(check *envoycore_gloo.HealthCheck) (*envoycore.HealthChe
 	case *envoycore_gloo.HealthCheck_CustomHealthCheck_:
 		switch typedConfig := typed.CustomHealthCheck.GetConfigType().(type) {
 		case *envoycore_gloo.HealthCheck_CustomHealthCheck_Config:
-			converted, err := pluginutils.GogoMessageToAnyGoProto(typedConfig.Config)
+			converted, err := protoutils.StructGogoToPb(typedConfig.Config)
 			if err != nil {
 				return nil, err
 			}
 			hc.HealthChecker = &envoycore.HealthCheck_CustomHealthCheck_{
 				CustomHealthCheck: &envoycore.HealthCheck_CustomHealthCheck{
 					Name: typed.CustomHealthCheck.GetName(),
-					ConfigType: &envoycore.HealthCheck_CustomHealthCheck_TypedConfig{
-						TypedConfig: converted,
+					ConfigType: &envoycore.HealthCheck_CustomHealthCheck_HiddenEnvoyDeprecatedConfig{
+						HiddenEnvoyDeprecatedConfig: converted,
 					},
 				},
 			}

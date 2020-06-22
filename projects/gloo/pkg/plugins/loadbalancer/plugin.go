@@ -3,7 +3,7 @@ package loadbalancer
 import (
 	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
@@ -88,7 +88,7 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	if cfg.HealthyPanicThreshold != nil || cfg.UpdateMergeWindow != nil {
 		out.CommonLbConfig = &envoycluster.Cluster_CommonLbConfig{}
 		if cfg.HealthyPanicThreshold != nil {
-			out.CommonLbConfig.HealthyPanicThreshold = &envoytype.Percent{
+			out.CommonLbConfig.HealthyPanicThreshold = &envoy_type_v3.Percent{
 				Value: cfg.HealthyPanicThreshold.Value,
 			}
 		}

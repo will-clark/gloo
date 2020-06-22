@@ -5,6 +5,13 @@ import (
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/service/cluster/v3"
+	endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/service/endpoint/v3"
+	listener_v3 "github.com/envoyproxy/go-control-plane/envoy/service/listener/v3"
+	route_v3 "github.com/envoyproxy/go-control-plane/envoy/service/route/v3"
+	cache_v3 "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	server_v3 "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -16,13 +23,13 @@ import (
 // Returns the node.metadata.role from the envoy bootstrap config
 // if not found, it returns a key for the Fallback snapshot
 // which alerts the user their Envoy is missing the required role key.
-type ProxyKeyHasher struct{}
+type ProxyKeyHasherV2 struct{}
 
-func NewNodeHasher() *ProxyKeyHasher {
-	return &ProxyKeyHasher{}
+func NewNodeHasherV2() *ProxyKeyHasherV2 {
+	return &ProxyKeyHasherV2{}
 }
 
-func (h *ProxyKeyHasher) ID(node *core.Node) string {
+func (h *ProxyKeyHasherV2) ID(node *core.Node) string {
 	if node.Metadata != nil {
 		roleValue := node.Metadata.Fields["role"]
 		if roleValue != nil {
@@ -66,8 +73,8 @@ func GetValidKeys(proxies v1.ProxyList, extensionKeys map[string]struct{}) []str
 	return validKeys
 }
 
-// register xDS methods with GRPC server
-func SetupEnvoyXds(grpcServer *grpc.Server, xdsServer envoyserver.Server, envoyCache envoycache.SnapshotCache) {
+// register xDS V2 methods with GRPC server
+func SetupEnvoyXdsV2(grpcServer *grpc.Server, xdsServer envoyserver.Server, envoyCache envoycache.SnapshotCache) {
 
 	// check if we need to register
 	if _, ok := grpcServer.GetServiceInfo()["envoy.api.v2.EndpointDiscoveryService"]; ok {
@@ -79,6 +86,39 @@ func SetupEnvoyXds(grpcServer *grpc.Server, xdsServer envoyserver.Server, envoyC
 	v2.RegisterClusterDiscoveryServiceServer(grpcServer, envoyServer)
 	v2.RegisterRouteDiscoveryServiceServer(grpcServer, envoyServer)
 	v2.RegisterListenerDiscoveryServiceServer(grpcServer, envoyServer)
-	_ = envoyCache.SetSnapshot(FallbackNodeKey, fallbackSnapshot(fallbackBindAddr, fallbackBindPort, fallbackStatusCode))
+	_ = envoyCache.SetSnapshot(FallbackNodeKey, fallbackSnapshotV2(fallbackBindAddr, fallbackBindPort, fallbackStatusCode))
+}
 
+// Returns the node.metadata.role from the envoy bootstrap config
+// if not found, it returns a key for the Fallback snapshot
+// which alerts the user their Envoy is missing the required role key.
+type ProxyKeyHasherV3 struct{}
+
+func NewNodeHasherV3() *ProxyKeyHasherV3 {
+	return &ProxyKeyHasherV3{}
+}
+
+func (h *ProxyKeyHasherV3) ID(node *core_v3.Node) string {
+	if node.Metadata != nil {
+		roleValue := node.Metadata.Fields["role"]
+		if roleValue != nil {
+			return roleValue.GetStringValue()
+		}
+	}
+	// TODO: use FallbackNodeKey here
+	return ""
+}
+
+// register xDS methods with GRPC server
+func SetupEnvoyXdsV3(grpcServer *grpc.Server, envoyServer server_v3.Server, envoyCache cache_v3.SnapshotCache) {
+	// check if we need to register
+	if _, ok := grpcServer.GetServiceInfo()["envoy.service.endpoint.v3.EndpointDiscoveryService"]; ok {
+		return
+	}
+
+	cluster_v3.RegisterClusterDiscoveryServiceServer(grpcServer, envoyServer)
+	endpoint_v3.RegisterEndpointDiscoveryServiceServer(grpcServer, envoyServer)
+	listener_v3.RegisterListenerDiscoveryServiceServer(grpcServer, envoyServer)
+	route_v3.RegisterRouteDiscoveryServiceServer(grpcServer, envoyServer)
+	_ = envoyCache.SetSnapshot(FallbackNodeKey, fallbackSnapshotV3(fallbackBindAddr, fallbackBindPort, fallbackStatusCode))
 }

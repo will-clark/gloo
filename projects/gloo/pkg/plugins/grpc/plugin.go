@@ -3,12 +3,8 @@ package grpc
 import (
 	"context"
 	"crypto/sha1"
+	"encoding/base64"
 	"fmt"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
-	"github.com/solo-io/go-utils/contextutils"
 
 	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -17,9 +13,6 @@ import (
 	"github.com/gogo/googleapis/google/api"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
-
-	"encoding/base64"
-
 	"github.com/gogo/protobuf/types"
 	errors "github.com/rotisserie/eris"
 	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
@@ -31,6 +24,9 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
 	transformutils "github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/transformation"
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -267,8 +263,8 @@ func addWellKnownProtos(descriptors *descriptor.FileDescriptorSet) {
 	}
 
 	if !googleApiAnnotationsFound {
-		//TODO: investigate if we need this
-		//addGoogleApisAnnotations(packageName, set)
+		// TODO: investigate if we need this
+		// addGoogleApisAnnotations(packageName, set)
 	}
 }
 
