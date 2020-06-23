@@ -48,7 +48,7 @@ func (this *acceptOrDenyRateLimitServer) ShouldRateLimit(ctx context.Context, re
 	}
 }
 
-var _ = FDescribe("Rate Limit", func() {
+var _ = Describe("Rate Limit", func() {
 
 	var (
 		ctx         context.Context
