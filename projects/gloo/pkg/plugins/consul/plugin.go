@@ -16,7 +16,10 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 )
 
-var _ discovery.DiscoveryPlugin = new(plugin)
+var (
+	_ discovery.DiscoveryPlugin = new(plugin)
+	_ plugins.UpstreamPlugin    = new(plugin)
+)
 
 var (
 	DefaultDnsAddress         = "127.0.0.1:8600"

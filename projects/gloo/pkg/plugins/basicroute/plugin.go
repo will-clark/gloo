@@ -14,8 +14,10 @@ import (
 
 type Plugin struct{}
 
-var _ plugins.RoutePlugin = NewPlugin()
-var _ plugins.VirtualHostPlugin = NewPlugin()
+var (
+	_ plugins.RoutePlugin       = new(Plugin)
+	_ plugins.VirtualHostPlugin = new(Plugin)
+)
 
 // Handles a RoutePlugin APIs which map directly to basic Envoy config
 func NewPlugin() *Plugin {

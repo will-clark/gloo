@@ -9,13 +9,13 @@ import (
 	envoyalcfg "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 )
 
 const (
@@ -26,8 +26,9 @@ func NewPlugin() *Plugin {
 	return &Plugin{}
 }
 
-var _ plugins.Plugin = new(Plugin)
-var _ plugins.ListenerPlugin = new(Plugin)
+var (
+	_ plugins.ListenerPlugin = new(Plugin)
+)
 
 type Plugin struct {
 }
@@ -51,7 +52,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 		}
 		for _, f := range out.FilterChains {
 			for i, filter := range f.Filters {
-				if filter.Name == util.HTTPConnectionManager {
+				if filter.Name == wellknown.HTTPConnectionManager {
 					// get config
 					var hcmCfg envoyhttp.HttpConnectionManager
 					err := translatorutil.ParseConfig(filter, &hcmCfg)
@@ -66,7 +67,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 						return err
 					}
 
-					f.Filters[i], err = translatorutil.NewFilterWithConfig(util.HTTPConnectionManager, &hcmCfg)
+					f.Filters[i], err = translatorutil.NewFilterWithConfig(wellknown.HTTPConnectionManager, &hcmCfg)
 					// this should never error
 					if err != nil {
 						return err
@@ -80,7 +81,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 		}
 		for _, f := range out.FilterChains {
 			for i, filter := range f.Filters {
-				if filter.Name == util.TCPProxy {
+				if filter.Name == wellknown.TCPProxy {
 					// get config
 					var tcpCfg envoytcp.TcpProxy
 					err := translatorutil.ParseConfig(filter, &tcpCfg)
@@ -95,7 +96,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 						return err
 					}
 
-					f.Filters[i], err = translatorutil.NewFilterWithConfig(util.TCPProxy, &tcpCfg)
+					f.Filters[i], err = translatorutil.NewFilterWithConfig(wellknown.TCPProxy, &tcpCfg)
 					// this should never error
 					if err != nil {
 						return err
@@ -116,7 +117,7 @@ func handleAccessLogPlugins(service *als.AccessLoggingService, logCfg []*envoyal
 			if err := copyFileSettings(&cfg, cfgType); err != nil {
 				return nil, err
 			}
-			newAlsCfg, err := translatorutil.NewAccessLogWithConfig(util.FileAccessLog, &cfg)
+			newAlsCfg, err := translatorutil.NewAccessLogWithConfig(wellknown.FileAccessLog, &cfg)
 			if err != nil {
 				return nil, err
 			}
@@ -126,7 +127,7 @@ func handleAccessLogPlugins(service *als.AccessLoggingService, logCfg []*envoyal
 			if err := copyGrpcSettings(&cfg, cfgType, params); err != nil {
 				return nil, err
 			}
-			newAlsCfg, err := translatorutil.NewAccessLogWithConfig(util.HTTPGRPCAccessLog, &cfg)
+			newAlsCfg, err := translatorutil.NewAccessLogWithConfig(wellknown.HTTPGRPCAccessLog, &cfg)
 			if err != nil {
 				return nil, err
 			}

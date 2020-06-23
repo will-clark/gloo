@@ -15,7 +15,14 @@ const (
 	FilterName = "io.solo.transformation"
 )
 
-var pluginStage = plugins.AfterStage(plugins.AuthZStage)
+var (
+	pluginStage = plugins.AfterStage(plugins.AuthZStage)
+
+	_ plugins.VirtualHostPlugin         = new(Plugin)
+	_ plugins.WeightedDestinationPlugin = new(Plugin)
+	_ plugins.RoutePlugin               = new(Plugin)
+	_ plugins.HttpFilterPlugin          = new(Plugin)
+)
 
 type Plugin struct {
 	RequireTransformationFilter bool

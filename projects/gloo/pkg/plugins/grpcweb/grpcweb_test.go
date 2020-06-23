@@ -1,10 +1,9 @@
 package grpcweb_test
 
 import (
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
-
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/grpcweb"
 
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
@@ -19,7 +18,7 @@ var _ = Describe("Grpcweb", func() {
 		initParams     plugins.InitParams
 		expectedFilter = []plugins.StagedHttpFilter{
 			{
-				HttpFilter: &envoyhttp.HttpFilter{Name: util.GRPCWeb},
+				HttpFilter: &envoyhttp.HttpFilter{Name: wellknown.GRPCWeb},
 				Stage:      plugins.AfterStage(plugins.AuthZStage),
 			},
 		}

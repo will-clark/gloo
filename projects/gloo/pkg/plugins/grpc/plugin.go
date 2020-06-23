@@ -55,7 +55,13 @@ const (
 	filterName = "envoy.grpc_json_transcoder"
 )
 
-var pluginStage = plugins.BeforeStage(plugins.OutAuthStage)
+var (
+	pluginStage = plugins.BeforeStage(plugins.OutAuthStage)
+
+	_ plugins.RoutePlugin      = new(plugin)
+	_ plugins.UpstreamPlugin   = new(plugin)
+	_ plugins.HttpFilterPlugin = new(plugin)
+)
 
 func (p *plugin) Init(params plugins.InitParams) error {
 	p.ctx = params.Ctx

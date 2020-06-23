@@ -18,7 +18,13 @@ const (
 	FilterName = "envoy.fault"
 )
 
-var pluginStage = plugins.DuringStage(plugins.FaultStage)
+var (
+	pluginStage = plugins.DuringStage(plugins.FaultStage)
+
+	_ plugins.HttpFilterPlugin = new(Plugin)
+	_ plugins.RoutePlugin      = new(Plugin)
+	_ plugins.HttpFilterPlugin = new(Plugin)
+)
 
 type Plugin struct {
 }

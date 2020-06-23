@@ -32,6 +32,11 @@ type plugin struct {
 	transformsAdded   *bool
 }
 
+var (
+	_ plugins.UpstreamPlugin = new(plugin)
+	_ plugins.RoutePlugin    = new(plugin)
+)
+
 func NewPlugin(transformsAdded *bool) plugins.Plugin {
 	return &plugin{transformsAdded: transformsAdded}
 }

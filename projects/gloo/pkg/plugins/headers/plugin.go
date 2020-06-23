@@ -18,9 +18,11 @@ var (
 // Puts Header Manipulation config on Routes, VirtualHosts, and Weighted Clusters
 type Plugin struct{}
 
-var _ plugins.RoutePlugin = NewPlugin()
-var _ plugins.VirtualHostPlugin = NewPlugin()
-var _ plugins.WeightedDestinationPlugin = NewPlugin()
+var (
+	_ plugins.RoutePlugin               = NewPlugin()
+	_ plugins.VirtualHostPlugin         = NewPlugin()
+	_ plugins.WeightedDestinationPlugin = NewPlugin()
+)
 
 func NewPlugin() *Plugin {
 	return &Plugin{}

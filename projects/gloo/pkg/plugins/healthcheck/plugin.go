@@ -3,24 +3,25 @@ package healthcheck
 import (
 	route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoyhealthcheck "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/health_check/v2"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	errors "github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
-
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 )
-
-// filter info
-var pluginStage = plugins.AfterStage(plugins.AuthZStage)
 
 func NewPlugin() *Plugin {
 	return &Plugin{}
 }
 
-var _ plugins.Plugin = new(Plugin)
-var _ plugins.HttpFilterPlugin = new(Plugin)
+var (
+	// filter info
+	pluginStage = plugins.AfterStage(plugins.AuthZStage)
+
+	_ plugins.Plugin           = new(Plugin)
+	_ plugins.HttpFilterPlugin = new(Plugin)
+)
 
 type Plugin struct {
 }
@@ -53,7 +54,7 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 		}},
 	}
 
-	healthCheckFilter, err := pluginutils.NewStagedFilterWithConfig(util.HealthCheck, hc, pluginStage)
+	healthCheckFilter, err := pluginutils.NewStagedFilterWithConfig(wellknown.HealthCheck, hc, pluginStage)
 	if err != nil {
 		return nil, errors.Wrapf(err, "generating filter config")
 	}

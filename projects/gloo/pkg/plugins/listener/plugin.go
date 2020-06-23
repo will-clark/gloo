@@ -11,8 +11,10 @@ func NewPlugin() *Plugin {
 	return &Plugin{}
 }
 
-var _ plugins.Plugin = new(Plugin)
-var _ plugins.ListenerPlugin = new(Plugin)
+var (
+	_ plugins.Plugin         = new(Plugin)
+	_ plugins.ListenerPlugin = new(Plugin)
+)
 
 type Plugin struct {
 }

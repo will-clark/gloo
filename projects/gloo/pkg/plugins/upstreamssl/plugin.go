@@ -9,6 +9,10 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
+var (
+	_ plugins.UpstreamPlugin = new(Plugin)
+)
+
 type Plugin struct{}
 
 func NewPlugin() *Plugin {

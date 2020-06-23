@@ -1,10 +1,9 @@
 package gzip
 
 import (
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
-
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -13,14 +12,16 @@ import (
 // filter should be called after routing decision has been made
 var pluginStage = plugins.DuringStage(plugins.RouteStage)
 
-const filterName = util.Gzip
+const filterName = wellknown.Gzip
 
 func NewPlugin() *Plugin {
 	return &Plugin{}
 }
 
-var _ plugins.Plugin = new(Plugin)
-var _ plugins.HttpFilterPlugin = new(Plugin)
+var (
+	_ plugins.Plugin           = new(Plugin)
+	_ plugins.HttpFilterPlugin = new(Plugin)
+)
 
 type Plugin struct {
 }

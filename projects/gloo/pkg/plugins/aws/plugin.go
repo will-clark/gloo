@@ -36,7 +36,13 @@ const (
 	secretKey = "secret_key"
 )
 
-var pluginStage = plugins.DuringStage(plugins.OutAuthStage)
+var (
+	pluginStage = plugins.DuringStage(plugins.OutAuthStage)
+
+	_ plugins.UpstreamPlugin   = new(plugin)
+	_ plugins.RoutePlugin      = new(plugin)
+	_ plugins.HttpFilterPlugin = new(plugin)
+)
 
 func getLambdaHostname(s *aws.UpstreamSpec) string {
 	return fmt.Sprintf("lambda.%s.amazonaws.com", s.Region)

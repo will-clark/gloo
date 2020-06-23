@@ -19,6 +19,8 @@ import (
 
 var (
 	_ discovery.DiscoveryPlugin = new(plugin)
+
+	_ plugins.UpstreamPlugin = new(plugin)
 )
 
 type plugin struct {

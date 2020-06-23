@@ -33,6 +33,11 @@ var (
 	// we may want to rate limit before executing the AuthN and AuthZ stages
 	// notably, AuthZ still needs to occur after AuthN
 	beforeAuthStage = plugins.BeforeStage(plugins.AuthNStage)
+
+	_ plugins.Plugin            = new(Plugin)
+	_ plugins.RoutePlugin       = new(Plugin)
+	_ plugins.VirtualHostPlugin = new(Plugin)
+	_ plugins.HttpFilterPlugin  = new(Plugin)
 )
 
 type Plugin struct {

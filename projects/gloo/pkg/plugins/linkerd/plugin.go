@@ -25,7 +25,10 @@ type Plugin struct {
 	enabled bool
 }
 
-var _ plugins.Plugin = &Plugin{}
+var (
+	_ plugins.Plugin      = &Plugin{}
+	_ plugins.RoutePlugin = &Plugin{}
+)
 
 func NewPlugin() *Plugin {
 	return &Plugin{}

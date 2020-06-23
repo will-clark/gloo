@@ -28,8 +28,10 @@ var (
 
 type Plugin struct{}
 
-// Compile-time assertion
-var _ plugins.VirtualHostPlugin = &Plugin{}
+var (
+	// Compile-time assertion
+	_ plugins.VirtualHostPlugin = &Plugin{}
+)
 
 func NewPlugin() *Plugin {
 	return &Plugin{}

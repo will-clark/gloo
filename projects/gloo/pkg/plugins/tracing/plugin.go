@@ -19,9 +19,11 @@ func NewPlugin() *Plugin {
 	return &Plugin{}
 }
 
-var _ plugins.Plugin = new(Plugin)
-var _ hcmp.HcmPlugin = new(Plugin)
-var _ plugins.RoutePlugin = new(Plugin)
+var (
+	_ plugins.Plugin      = new(Plugin)
+	_ hcmp.HcmPlugin      = new(Plugin)
+	_ plugins.RoutePlugin = new(Plugin)
+)
 
 type Plugin struct {
 }

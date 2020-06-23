@@ -19,6 +19,7 @@ import (
 	envoy_service_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/service/endpoint/v3"
 	envoy_service_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/service/listener/v3"
 	envoy_service_route_v3 "github.com/envoyproxy/go-control-plane/envoy/service/route/v3"
+	envoyutil "github.com/envoyproxy/go-control-plane/pkg/conversion"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes"
@@ -143,7 +144,11 @@ func getXdsDump(ctx context.Context, xdsPort, proxyName, proxyNamespace string) 
 					var hcm envoyhttp.HttpConnectionManager
 					switch config := filter.ConfigType.(type) {
 					case *envoylistener.Filter_TypedConfig:
-						if err := ptypes.UnmarshalAny(config.TypedConfig, &hcm); err == nil {
+						if err = ptypes.UnmarshalAny(config.TypedConfig, &hcm); err == nil {
+							hcms = append(hcms, hcm)
+						}
+					case *envoylistener.Filter_HiddenEnvoyDeprecatedConfig:
+						if err = envoyutil.StructToMessage(config.HiddenEnvoyDeprecatedConfig, &hcm); err == nil {
 							hcms = append(hcms, hcm)
 						}
 					}

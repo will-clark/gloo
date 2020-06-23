@@ -19,7 +19,13 @@ const (
 // AuthNStage because we are using this filter for authentication purposes
 var FilterStage = plugins.DuringStage(plugins.AuthNStage)
 
-var _ plugins.Plugin = &Plugin{}
+var (
+	_ plugins.Plugin                    = &Plugin{}
+	_ plugins.HttpFilterPlugin          = &Plugin{}
+	_ plugins.VirtualHostPlugin         = &Plugin{}
+	_ plugins.WeightedDestinationPlugin = &Plugin{}
+	_ plugins.RoutePlugin               = &Plugin{}
+)
 
 func NewCustomAuthPlugin() *Plugin {
 	return &Plugin{}

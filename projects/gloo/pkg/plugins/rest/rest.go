@@ -23,6 +23,12 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+var (
+	_ plugins.Plugin         = new(plugin)
+	_ plugins.RoutePlugin    = new(plugin)
+	_ plugins.UpstreamPlugin = new(plugin)
+)
+
 type UpstreamWithServiceSpec interface {
 	GetServiceSpec() *glooplugins.ServiceSpec
 }

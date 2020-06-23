@@ -9,12 +9,12 @@ import (
 	hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	cache_v3 "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
@@ -132,7 +132,7 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 		listener = &listener.Listener{
 			FilterChains: []*listener.FilterChain{{
 				Filters: []*listener.Filter{{
-					Name:       util.HTTPConnectionManager,
+					Name:       wellknown.HTTPConnectionManager,
 					ConfigType: config,
 				}},
 			}},

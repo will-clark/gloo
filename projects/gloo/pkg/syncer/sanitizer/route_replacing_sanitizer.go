@@ -5,29 +5,26 @@ import (
 	"sort"
 
 	cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	cache_v3 "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	"github.com/golang/protobuf/ptypes"
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
-
-	"github.com/solo-io/gloo/pkg/utils"
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
-	"go.opencensus.io/tag"
-
-	"go.uber.org/zap"
-
-	core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/pkg/utils"
+	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+	"go.opencensus.io/tag"
+	"go.uber.org/zap"
 )
 
 const (
@@ -96,7 +93,7 @@ func makeFallbackListenerAndCluster(responseCode uint32, responseBody string) (*
 			},
 		},
 		HttpFilters: []*v3.HttpFilter{{
-			Name: util.Router,
+			Name: wellknown.Router,
 		}},
 	}
 
@@ -116,7 +113,7 @@ func makeFallbackListenerAndCluster(responseCode uint32, responseBody string) (*
 		},
 		FilterChains: []*listener.FilterChain{{
 			Filters: []*listener.Filter{{
-				Name: util.HTTPConnectionManager,
+				Name: wellknown.HTTPConnectionManager,
 				ConfigType: &listener.Filter_TypedConfig{
 					TypedConfig: typedHcmConfig,
 				},

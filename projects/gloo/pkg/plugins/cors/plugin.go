@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 	"go.uber.org/zap"
 
 	core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -27,9 +27,12 @@ import (
 type plugin struct {
 }
 
-var _ plugins.Plugin = new(plugin)
-var _ plugins.HttpFilterPlugin = new(plugin)
-var _ plugins.RoutePlugin = new(plugin)
+var (
+	_ plugins.Plugin            = new(plugin)
+	_ plugins.VirtualHostPlugin = new(plugin)
+	_ plugins.HttpFilterPlugin  = new(plugin)
+	_ plugins.RoutePlugin       = new(plugin)
+)
 
 var (
 	InvalidRouteActionError = errors.New("cannot use cors plugin on non-Route_Route route actions")
@@ -127,6 +130,6 @@ func (p *plugin) translateRouteSpecificCorsConfig(in *cors.CorsPolicy, out *envo
 
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	return []plugins.StagedHttpFilter{
-		pluginutils.NewStagedFilter(util.CORS, pluginStage),
+		pluginutils.NewStagedFilter(wellknown.CORS, pluginStage),
 	}, nil
 }

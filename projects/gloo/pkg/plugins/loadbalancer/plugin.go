@@ -13,8 +13,11 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
-var _ plugins.Plugin = new(Plugin)
-var _ plugins.RoutePlugin = new(Plugin)
+var (
+	_ plugins.Plugin         = new(Plugin)
+	_ plugins.RoutePlugin    = new(Plugin)
+	_ plugins.UpstreamPlugin = new(Plugin)
+)
 
 type Plugin struct{}
 

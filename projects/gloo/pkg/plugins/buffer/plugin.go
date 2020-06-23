@@ -22,8 +22,13 @@ func NewPlugin() *Plugin {
 	return &Plugin{}
 }
 
-var _ plugins.Plugin = new(Plugin)
-var _ plugins.HttpFilterPlugin = new(Plugin)
+var (
+	_ plugins.Plugin                    = new(Plugin)
+	_ plugins.HttpFilterPlugin          = new(Plugin)
+	_ plugins.RoutePlugin               = new(Plugin)
+	_ plugins.VirtualHostPlugin         = new(Plugin)
+	_ plugins.WeightedDestinationPlugin = new(Plugin)
+)
 
 type Plugin struct {
 }

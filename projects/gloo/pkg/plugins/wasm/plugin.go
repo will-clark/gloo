@@ -35,6 +35,8 @@ var (
 
 	defaultPluginPredicate = plugins.AcceptedStage
 	defaultPluginStage     = plugins.BeforeStage(defaultPluginPredicate)
+
+	_ plugins.HttpFilterPlugin = new(Plugin)
 )
 
 type Plugin struct{}

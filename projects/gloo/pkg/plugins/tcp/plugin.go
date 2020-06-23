@@ -5,6 +5,7 @@ import (
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/rotisserie/eris"
@@ -16,7 +17,6 @@ import (
 	usconversion "github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 	"go.uber.org/zap"
 )
 
@@ -136,7 +136,7 @@ func tcpProxyFilter(params plugins.Params, host *v1.TcpHost, plugins *v1.TcpList
 	default:
 		return nil, NoDestinationTypeError(host)
 	}
-	tcpFilter, err := translatorutil.NewFilterWithConfig(util.TCPProxy, cfg)
+	tcpFilter, err := translatorutil.NewFilterWithConfig(wellknown.TCPProxy, cfg)
 	if err != nil {
 		return nil, err
 	}

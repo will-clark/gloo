@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/pkg/utils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -48,19 +49,19 @@ var _ = Describe("Fault Injection", func() {
 			return err
 		}
 
-		envoyPort := services.NextBindPort()
+		// envoyPort := services.NextBindPort()
 
 		setupInitialProxy := func() {
-			proxy := getGlooProxyWithVersion(nil, nil, envoyPort, up, "")
+			proxy := getGlooProxyWithVersion(nil, nil, defaults.HttpPort, up, "")
 			err := setupProxy(proxy, up)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(func() error {
-				_, err := http.Get(fmt.Sprintf("http://%s:%d/status/200", "localhost", envoyPort))
+				_, err := http.Get(fmt.Sprintf("http://%s:%d/status/200", "localhost", defaults.HttpPort))
 				if err != nil {
 					return err
 				}
 				return nil
-			}, "20s", ".1s").Should(BeNil())
+			}, "5m", ".1s").Should(BeNil())
 		}
 
 		setupUpstream := func() {
@@ -101,7 +102,7 @@ var _ = Describe("Fault Injection", func() {
 			}
 
 			Eventually(func() error {
-				proxy, err := getGlooProxy(testClients, abort, nil, envoyPort, up)
+				proxy, err := getGlooProxy(testClients, abort, nil, defaults.HttpPort, up)
 				if err != nil {
 					return err
 				}
@@ -110,7 +111,7 @@ var _ = Describe("Fault Injection", func() {
 			}, "20s", ".1s").Should(BeNil())
 
 			Eventually(func() error {
-				res, err := http.Get(fmt.Sprintf("http://%s:%d/status/200", "localhost", envoyPort))
+				res, err := http.Get(fmt.Sprintf("http://%s:%d/status/200", "localhost", defaults.HttpPort))
 				if err != nil {
 					return err
 				}
@@ -129,7 +130,7 @@ var _ = Describe("Fault Injection", func() {
 			}
 
 			Eventually(func() error {
-				proxy, err := getGlooProxy(testClients, nil, delay, envoyPort, up)
+				proxy, err := getGlooProxy(testClients, nil, delay, defaults.HttpPort, up)
 				if err != nil {
 					return err
 				}
@@ -139,7 +140,7 @@ var _ = Describe("Fault Injection", func() {
 
 			Eventually(func() error {
 				start := time.Now()
-				_, err := http.Get(fmt.Sprintf("http://%s:%d/status/200", "localhost", envoyPort))
+				_, err := http.Get(fmt.Sprintf("http://%s:%d/status/200", "localhost", defaults.HttpPort))
 				if err != nil {
 					return err
 				}
@@ -176,7 +177,7 @@ func getGlooProxyWithVersion(abort *fault.RouteAbort, delay *fault.RouteDelay, e
 		},
 		Listeners: []*gloov1.Listener{{
 			Name:        "listener",
-			BindAddress: "127.0.0.1",
+			BindAddress: "::",
 			BindPort:    envoyPort,
 			ListenerType: &gloov1.Listener_HttpListener{
 				HttpListener: &gloov1.HttpListener{

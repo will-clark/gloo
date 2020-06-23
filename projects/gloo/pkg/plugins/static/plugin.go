@@ -22,6 +22,10 @@ func NewPlugin() plugins.Plugin {
 	return &plugin{}
 }
 
+var (
+	_ plugins.UpstreamPlugin = new(plugin)
+)
+
 func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 	staticSpec, ok := u.UpstreamType.(*v1.Upstream_Static)
 	if !ok {
