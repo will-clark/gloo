@@ -10,14 +10,17 @@ admin:
 dynamic_resources:
   ads_config:
     api_type: GRPC
+    transport_api_version: V3
     grpc_services:
     - envoy_grpc:
         cluster_name: gloo.gloo-system.svc.cluster.local:9977
     rate_limit_settings: {}
   cds_config:
+    resource_api_version: V3
     ads: {}
   lds_config:
     ads: {}
+    resource_api_version: V3
 node:
   cluster: gateway
   id: '{{.PodName}}.{{.PodNamespace}}'
@@ -139,13 +142,16 @@ admin:
 dynamic_resources:
   ads_config:
     api_type: GRPC
+    transport_api_version: V3
     grpc_services:
     - envoy_grpc:
         cluster_name: gloo.gloo-system.svc.cluster.local:9977
     rate_limit_settings: {}
   cds_config:
+    resource_api_version: V3
     ads: {}
   lds_config:
+    resource_api_version: V3
     ads: {}
 node:
   cluster: gateway
@@ -272,13 +278,16 @@ admin:
 dynamic_resources:
   ads_config:
     api_type: GRPC
+    transport_api_version: V3
     grpc_services:
     - envoy_grpc:
         cluster_name: gloo.gloo-system.svc.cluster.local:9977
     rate_limit_settings: {}
   cds_config:
+    resource_api_version: V3
     ads: {}
   lds_config:
+    resource_api_version: V3
     ads: {}
 node:
   cluster: gateway
@@ -421,14 +430,17 @@ admin:
 dynamic_resources:
   ads_config:
     api_type: GRPC
+    transport_api_version: V3
     grpc_services:
     - envoy_grpc:
         cluster_name: gloo.gloo-system.svc.cluster.local:9977
     rate_limit_settings: {}
   cds_config:
     ads: {}
+    resource_api_version: V3
   lds_config:
     ads: {}
+    resource_api_version: V3
 node:
   cluster: gateway
   id: '{{.PodName}}.{{.PodNamespace}}'
@@ -592,13 +604,16 @@ admin:
 dynamic_resources:
   ads_config:
     api_type: GRPC
+    transport_api_version: V3
     grpc_services:
     - envoy_grpc:
         cluster_name: gloo.gloo-system.svc.cluster.local:9977
     rate_limit_settings: {}
   cds_config:
+    resource_api_version: V3
     ads: {}
   lds_config:
+    resource_api_version: V3
     ads: {}
 node:
   cluster: gateway

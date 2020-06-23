@@ -1,9 +1,9 @@
 package pluginutils
 
 import (
+	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 )
 
 func EnvoySingleEndpointLoadAssignment(out *envoycluster.Cluster, address string, port uint32) {

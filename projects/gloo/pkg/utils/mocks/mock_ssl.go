@@ -5,11 +5,12 @@
 package mock_utils
 
 import (
+	reflect "reflect"
+
 	envoy_api_v2_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	gomock "github.com/golang/mock/gomock"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	utils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
-	reflect "reflect"
 )
 
 // MockSslConfigTranslator is a mock of SslConfigTranslator interface

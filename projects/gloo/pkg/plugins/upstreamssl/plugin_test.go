@@ -1,7 +1,6 @@
 package upstreamssl_test
 
 import (
-	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"

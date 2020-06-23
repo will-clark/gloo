@@ -1,0 +1,8 @@
+changelog:
+- type: NON_USER_FACING
+  description: >
+    Updated control-plane ADS api to V3. This change is important to note, as V2 will no longer be supported.
+    This does not however mean that all V2 APIs have been removed from our code, Envoy allows use of both
+    simultaneously in certain situations. 
+  issueLink: https://github.com/solo-io/gloo/issues/2815
+  resolvesIssue: false
