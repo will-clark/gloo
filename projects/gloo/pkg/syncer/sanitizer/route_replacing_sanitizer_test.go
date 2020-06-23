@@ -190,7 +190,6 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 		xdsSnapshot.Resources[types.Route] = cache_v3.NewResources("routes", []types.Resource{routeCfg})
 		xdsSnapshot.Resources[types.Listener] = cache_v3.NewResources("listeners", []types.Resource{listener})
 
-
 		sanitizer, err := NewRouteReplacingSanitizer(invalidCfgPolicy)
 		Expect(err).NotTo(HaveOccurred())
 
