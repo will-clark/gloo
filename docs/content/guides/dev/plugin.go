@@ -16,8 +16,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	// add these imports to use Envoy's API
-	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 
 	// add these imports to use Google Compute Engine's API
@@ -45,6 +43,7 @@ func (*plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *v2.C
 	// tell envoy to use ADS to resolve Endpoints
 	out.EdsClusterConfig = &envoyapi.Cluster_EdsClusterConfig{
 		EdsConfig: &envoycore.ConfigSource{
+			ResourceApiVersion: envoycore.ApiVersion_V3,
 			ConfigSourceSpecifier: &envoycore.ConfigSource_Ads{
 				Ads: &envoycore.AggregatedConfigSource{},
 			},

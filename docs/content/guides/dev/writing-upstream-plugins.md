@@ -321,6 +321,7 @@ func (*plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *v2.C
 	// tell envoy to use ADS to resolve Endpoints  
 	out.EdsClusterConfig = &envoyapi.Cluster_EdsClusterConfig{
 		EdsConfig: &envoycore.ConfigSource{
+			ResourceApiVersion: envoycore.ApiVersion_V3,
 			ConfigSourceSpecifier: &envoycore.ConfigSource_Ads{
 				Ads: &envoycore.AggregatedConfigSource{},
 			},

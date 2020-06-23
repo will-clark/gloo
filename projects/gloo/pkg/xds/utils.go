@@ -11,6 +11,7 @@ func SetEdsOnCluster(out *envoycluster.Cluster) {
 	}
 	out.EdsClusterConfig = &envoycluster.Cluster_EdsClusterConfig{
 		EdsConfig: &envoycore.ConfigSource{
+			ResourceApiVersion: envoycore.ApiVersion_V3,
 			ConfigSourceSpecifier: &envoycore.ConfigSource_Ads{
 				Ads: &envoycore.AggregatedConfigSource{},
 			},

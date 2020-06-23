@@ -36,6 +36,7 @@ func NewHttpConnectionManager(listener *v1.HttpListener, httpFilters []*envoyhtt
 		RouteSpecifier: &envoyhttp.HttpConnectionManager_Rds{
 			Rds: &envoyhttp.Rds{
 				ConfigSource: &envoycore.ConfigSource{
+					ResourceApiVersion: envoycore.ApiVersion_V3,
 					ConfigSourceSpecifier: &envoycore.ConfigSource_Ads{
 						Ads: &envoycore.AggregatedConfigSource{},
 					},

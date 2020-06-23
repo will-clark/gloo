@@ -50,6 +50,7 @@ func fallbackSnapshotV3(bindAddress string, port, invalidConfigStatusCode uint32
 		},
 	}
 	adsSource := envoycore.ConfigSource{
+		ResourceApiVersion: envoycore.ApiVersion_V3,
 		ConfigSourceSpecifier: &envoycore.ConfigSource_Ads{
 			Ads: &envoycore.AggregatedConfigSource{},
 		},

@@ -254,8 +254,10 @@ data:
         - envoy_grpc: {cluster_name: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}:{{ $.Values.gloo.deployment.xdsPort }}}
       cds_config:
         ads: {}
+        resource_api_version: V3
       lds_config:
         ads: {}
+        resource_api_version: V3
     admin:
       access_log_path: /dev/null
       address:
