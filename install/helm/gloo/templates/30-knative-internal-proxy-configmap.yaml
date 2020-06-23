@@ -87,12 +87,15 @@ data:
       ads_config:
         api_type: GRPC
         rate_limit_settings: {}
+        transport_api_version: V3
         grpc_services:
         - envoy_grpc: {cluster_name: xds_cluster}
       cds_config:
         ads: {}
+        resource_api_version: V3
       lds_config:
         ads: {}
+        resource_api_version: V3
     admin:
       access_log_path: /dev/null
       address:
