@@ -256,7 +256,7 @@ func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 		ControlPlane: syncer.NewControlPlane(ctx, grpcServer, &net.TCPAddr{
 			IP:   net.ParseIP("0.0.0.0"),
 			Port: 8081,
-		}, nil, true),
+		}, nil, nil, true),
 		ValidationServer: syncer.NewValidationServer(ctx, grpcServerValidation, &net.TCPAddr{
 			IP:   net.ParseIP("0.0.0.0"),
 			Port: 8081,

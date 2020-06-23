@@ -49,8 +49,6 @@ var _ = Describe("Fault Injection", func() {
 			return err
 		}
 
-		// envoyPort := services.NextBindPort()
-
 		setupInitialProxy := func() {
 			proxy := getGlooProxyWithVersion(nil, nil, defaults.HttpPort, up, "")
 			err := setupProxy(proxy, up)
@@ -61,7 +59,7 @@ var _ = Describe("Fault Injection", func() {
 					return err
 				}
 				return nil
-			}, "5m", ".1s").Should(BeNil())
+			}, "20s", ".1s").Should(BeNil())
 		}
 
 		setupUpstream := func() {

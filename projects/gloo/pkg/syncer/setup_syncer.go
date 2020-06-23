@@ -114,13 +114,20 @@ type setupSyncer struct {
 	callbacks                xdsserver.Callbacks
 }
 
-func NewControlPlane(ctx context.Context, grpcServer *grpc.Server, bindAddr net.Addr, callbacks xdsserver.Callbacks, start bool) bootstrap.ControlPlane {
+func NewControlPlane(
+	ctx context.Context,
+	grpcServer *grpc.Server,
+	bindAddr net.Addr,
+	v2Callbacks xdsserver.Callbacks,
+	v3Callbacks server_v3.Callbacks,
+	start bool,
+) bootstrap.ControlPlane {
 	hasherV2 := xds.NewNodeHasherV2()
 	snapshotCache := cache.NewSnapshotCache(true, hasherV2, contextutils.LoggerFrom(ctx))
-	xdsServer := server.NewServer(snapshotCache, callbacks)
+	xdsServer := server.NewServer(snapshotCache, v2Callbacks)
 	hasherV3 := xds.NewNodeHasherV3()
 	snapshotCacheV3 := cache_v3.NewSnapshotCache(true, hasherV3, contextutils.LoggerFrom(ctx))
-	xdsServerV3 := server_v3.NewServer(ctx, snapshotCacheV3, nil)
+	xdsServerV3 := server_v3.NewServer(ctx, snapshotCacheV3, v3Callbacks)
 	envoyv2.RegisterAggregatedDiscoveryServiceServer(grpcServer, xdsServer)
 	envoy_service_discovery_v3.RegisterAggregatedDiscoveryServiceServer(grpcServer, xdsServerV3)
 	reflection.Register(grpcServer)
@@ -228,11 +235,20 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	if s.controlPlane == emptyControlPlane {
 		// create new context as the grpc server might survive multiple iterations of this loop.
 		ctx, cancel := context.WithCancel(context.Background())
-		var callbacks xdsserver.Callbacks
+		var skCallbacks xdsserver.Callbacks
+		var envoyCallbacks server_v3.Callbacks
 		if s.extensions != nil {
-			callbacks = s.extensions.XdsCallbacks
+			skCallbacks = s.extensions.SkXdsCallbacks
+			envoyCallbacks = s.extensions.EnvoyXdsCallbacks
 		}
-		s.controlPlane = NewControlPlane(ctx, s.makeGrpcServer(ctx), xdsTcpAddress, callbacks, true)
+		s.controlPlane = NewControlPlane(
+			ctx,
+			s.makeGrpcServer(ctx),
+			xdsTcpAddress,
+			skCallbacks,
+			envoyCallbacks,
+			true,
+		)
 		s.previousXdsServer.cancel = cancel
 		s.previousXdsServer.addr = xdsAddr
 	}
@@ -319,8 +335,10 @@ type Extensions struct {
 	PluginExtensions      []plugins.Plugin
 	PluginExtensionsFuncs []func() plugins.Plugin
 	SyncerExtensions      []TranslatorSyncerExtensionFactory
-	XdsCallbacks          xdsserver.Callbacks
-
+	// Callbacks which will be passed to and called by the solo-kit control-plane server
+	SkXdsCallbacks xdsserver.Callbacks
+	// Callbacks which will be passed to and called by the envoy go-control-plane control-plane
+	EnvoyXdsCallbacks server_v3.Callbacks
 	// optional custom handler for envoy usage metrics that get pushed to the gloo pod
 	MetricsHandler metricsservice.MetricsHandler
 }
@@ -607,7 +625,15 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	return nil
 }
 
-func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCache kube.SharedCache, consulClient *consulapi.Client, vaultClient *vaultapi.Client, memCache memory.InMemoryResourceCache, settings *v1.Settings) (bootstrap.Opts, error) {
+func constructOpts(
+	ctx context.Context,
+	clientset *kubernetes.Interface,
+	kubeCache kube.SharedCache,
+	consulClient *consulapi.Client,
+	vaultClient *vaultapi.Client,
+	memCache memory.InMemoryResourceCache,
+	settings *v1.Settings,
+) (bootstrap.Opts, error) {
 
 	var (
 		cfg           *rest.Config
