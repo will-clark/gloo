@@ -84,13 +84,16 @@ data:
     dynamic_resources:
       ads_config:
         api_type: GRPC
+        transport_api_version: V3
         rate_limit_settings: {}
         grpc_services:
         - envoy_grpc: {cluster_name: xds_cluster}
       cds_config:
         ads: {}
+        resource_api_version: V3
       lds_config:
         ads: {}
+        resource_api_version: V3
     admin:
       access_log_path: /dev/null
       address:
