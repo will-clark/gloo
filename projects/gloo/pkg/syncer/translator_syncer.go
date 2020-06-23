@@ -3,6 +3,7 @@ package syncer
 import (
 	"context"
 
+	cache_v3 "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 
@@ -14,10 +15,12 @@ import (
 )
 
 type translatorSyncer struct {
-	translator translator.Translator
-	sanitizer  sanitizer.XdsSanitizer
-	xdsCache   envoycache.SnapshotCache
-	reporter   reporter.Reporter
+	translator    translator.Translator
+	sanitizer     sanitizer.XdsSanitizer
+	skXdsCache    envoycache.SnapshotCache
+	envoyXdsCache cache_v3.SnapshotCache
+
+	reporter reporter.Reporter
 	// used for debugging purposes only
 	latestSnap *v1.ApiSnapshot
 	extensions []TranslatorSyncerExtension
@@ -37,14 +40,24 @@ type TranslatorSyncerExtension interface {
 	Sync(ctx context.Context, snap *v1.ApiSnapshot, xdsCache envoycache.SnapshotCache) (string, error)
 }
 
-func NewTranslatorSyncer(translator translator.Translator, xdsCache envoycache.SnapshotCache, sanitizer sanitizer.XdsSanitizer, reporter reporter.Reporter, devMode bool, extensions []TranslatorSyncerExtension, settings *v1.Settings) v1.ApiSyncer {
+func NewTranslatorSyncer(
+	translator translator.Translator,
+	skXdsCache envoycache.SnapshotCache,
+	envoyXdsCache cache_v3.SnapshotCache,
+	sanitizer sanitizer.XdsSanitizer,
+	reporter reporter.Reporter,
+	devMode bool,
+	extensions []TranslatorSyncerExtension,
+	settings *v1.Settings,
+) v1.ApiSyncer {
 	s := &translatorSyncer{
-		translator: translator,
-		xdsCache:   xdsCache,
-		reporter:   reporter,
-		extensions: extensions,
-		sanitizer:  sanitizer,
-		settings:   settings,
+		translator:    translator,
+		sanitizer:     sanitizer,
+		skXdsCache:    skXdsCache,
+		envoyXdsCache: envoyXdsCache,
+		reporter:      reporter,
+		extensions:    extensions,
+		settings:      settings,
 	}
 	if devMode {
 		// TODO(ilackarms): move this somewhere else?
@@ -63,7 +76,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 	}
 	s.extensionKeys = map[string]struct{}{}
 	for _, extension := range s.extensions {
-		nodeID, err := extension.Sync(ctx, snap, s.xdsCache)
+		nodeID, err := extension.Sync(ctx, snap, s.skXdsCache)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 		}

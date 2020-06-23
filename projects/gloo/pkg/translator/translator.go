@@ -7,6 +7,8 @@ import (
 	envoyendpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/mitchellh/hashstructure"
 	errors "github.com/rotisserie/eris"
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
@@ -14,16 +16,14 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
-	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
-	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"go.opencensus.io/trace"
 )
 
 type Translator interface {
-	Translate(params plugins.Params, proxy *v1.Proxy) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error)
+	Translate(params plugins.Params, proxy *v1.Proxy) (cache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error)
 }
 
 func NewTranslator(sslConfigTranslator utils.SslConfigTranslator, settings *v1.Settings, getPlugins func() []plugins.Plugin) Translator {
@@ -40,7 +40,7 @@ type translatorFactory struct {
 	sslConfigTranslator utils.SslConfigTranslator
 }
 
-func (t *translatorFactory) Translate(params plugins.Params, proxy *v1.Proxy) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error) {
+func (t *translatorFactory) Translate(params plugins.Params, proxy *v1.Proxy) (cache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error) {
 	instance := &translatorInstance{
 		plugins:             t.getPlugins(),
 		settings:            t.settings,
@@ -56,7 +56,7 @@ type translatorInstance struct {
 	sslConfigTranslator utils.SslConfigTranslator
 }
 
-func (t *translatorInstance) Translate(params plugins.Params, proxy *v1.Proxy) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error) {
+func (t *translatorInstance) Translate(params plugins.Params, proxy *v1.Proxy) (cache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error) {
 
 	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.Translate")
 	params.Ctx = ctx
@@ -68,7 +68,7 @@ func (t *translatorInstance) Translate(params plugins.Params, proxy *v1.Proxy) (
 			Ctx:      params.Ctx,
 			Settings: t.settings,
 		}); err != nil {
-			return nil, nil, nil, errors.Wrapf(err, "plugin init failed")
+			return cache.Snapshot{}, nil, nil, errors.Wrapf(err, "plugin init failed")
 		}
 	}
 	logger := contextutils.LoggerFrom(params.Ctx)
@@ -201,22 +201,22 @@ func (t *translatorInstance) computeListenerResources(params plugins.Params, pro
 func generateXDSSnapshot(clusters []*envoycluster.Cluster,
 	endpoints []*envoyendpoint.ClusterLoadAssignment,
 	routeConfigs []*envoyroute.RouteConfiguration,
-	listeners []*envoylistener.Listener) envoycache.Snapshot {
+	listeners []*envoylistener.Listener) cache.Snapshot {
 
-	var endpointsProto, clustersProto, listenersProto []envoycache.Resource
+	var endpointsProto, clustersProto, listenersProto []types.Resource
 
 	for _, ep := range endpoints {
-		endpointsProto = append(endpointsProto, xds.NewEnvoyResource(ep))
+		endpointsProto = append(endpointsProto, ep)
 	}
 	for _, cluster := range clusters {
-		clustersProto = append(clustersProto, xds.NewEnvoyResource(cluster))
+		clustersProto = append(clustersProto, cluster)
 	}
 	for _, listener := range listeners {
 		// don't add empty listeners, envoy will complain
 		if len(listener.FilterChains) < 1 {
 			continue
 		}
-		listenersProto = append(listenersProto, xds.NewEnvoyResource(listener))
+		listenersProto = append(listenersProto, listener)
 	}
 	// construct version
 	// TODO: investigate whether we need a more sophisticated versioning algorithm
@@ -237,27 +237,28 @@ func generateXDSSnapshot(clusters []*envoycluster.Cluster,
 
 	// if clusters are updated, provider a new version of the endpoints,
 	// so the clusters are warm
-	return xds.NewSnapshotFromResources(
-		envoycache.NewResources(fmt.Sprintf("%v-%v", clustersVersion, endpointsVersion), endpointsProto),
-		envoycache.NewResources(fmt.Sprintf("%v", clustersVersion), clustersProto),
-		MakeRdsResources(routeConfigs),
-		envoycache.NewResources(fmt.Sprintf("%v", listenersVersion), listenersProto))
+	snap := cache.Snapshot{}
+	snap.Resources[types.Endpoint] = cache.NewResources(fmt.Sprintf("%v-%v", clustersVersion, endpointsVersion), endpointsProto)
+	snap.Resources[types.Cluster] = cache.NewResources(fmt.Sprintf("%v", clustersVersion), clustersProto)
+	snap.Resources[types.Route] = MakeRdsResources(routeConfigs)
+	snap.Resources[types.Listener] = cache.NewResources(fmt.Sprintf("%v", listenersVersion), listenersProto)
+	return snap
 }
 
-func MakeRdsResources(routeConfigs []*envoyroute.RouteConfiguration) envoycache.Resources {
-	var routesProto []envoycache.Resource
+func MakeRdsResources(routeConfigs []*envoyroute.RouteConfiguration) cache.Resources {
+	var routesProto []types.Resource
 
 	for _, routeCfg := range routeConfigs {
 		// don't add empty route configs, envoy will complain
 		if len(routeCfg.VirtualHosts) < 1 {
 			continue
 		}
-		routesProto = append(routesProto, xds.NewEnvoyResource(routeCfg))
+		routesProto = append(routesProto, routeCfg)
 	}
 
 	routesVersion, err := hashstructure.Hash(routesProto, nil)
 	if err != nil {
 		panic(errors.Wrap(err, "constructing version hash for routes envoy snapshot components"))
 	}
-	return envoycache.NewResources(fmt.Sprintf("%v", routesVersion), routesProto)
+	return cache.NewResources(fmt.Sprintf("%v", routesVersion), routesProto)
 }

@@ -50,8 +50,8 @@ type Consul struct {
 
 type ControlPlane struct {
 	*GrpcService
-	SnapshotCacheV2 cache.SnapshotCache
-	XDSServerV2     server.Server
+	SkSnapshotCache cache.SnapshotCache
+	SkXDSServer     server.Server
 	SnapshotCacheV3 cache_v3.SnapshotCache
 	XDSServerV3     server_v3.Server
 }

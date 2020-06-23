@@ -3,14 +3,14 @@ package sanitizer
 import (
 	"context"
 
+	"github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	cache_v3 "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
-	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
-	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
@@ -28,7 +28,7 @@ func NewUpstreamRemovingSanitizer() *UpstreamRemovingSanitizer {
 // the xDS snapshot. If the snapshot is still consistent after these mutations and there are no errors related to other
 // resources, we are good to send it to Envoy.
 //
-func (s *UpstreamRemovingSanitizer) SanitizeSnapshot(ctx context.Context, glooSnapshot *v1.ApiSnapshot, xdsSnapshot envoycache.Snapshot, reports reporter.ResourceReports) (envoycache.Snapshot, error) {
+func (s *UpstreamRemovingSanitizer) SanitizeSnapshot(ctx context.Context, glooSnapshot *v1.ApiSnapshot, xdsSnapshot cache_v3.Snapshot, reports reporter.ResourceReports) (cache_v3.Snapshot, error) {
 	ctx = contextutils.WithLogger(ctx, "invalid-upstream-remover")
 
 	resourcesErr := reports.Validate()
@@ -38,8 +38,8 @@ func (s *UpstreamRemovingSanitizer) SanitizeSnapshot(ctx context.Context, glooSn
 
 	contextutils.LoggerFrom(ctx).Debug("removing errored upstreams and checking consistency")
 
-	clusters := xdsSnapshot.GetResources(xds.ClusterTypev2)
-	endpoints := xdsSnapshot.GetResources(xds.EndpointTypev2)
+	clusters := xdsSnapshot.Resources[types.Cluster]
+	endpoints := xdsSnapshot.Resources[types.Endpoint]
 
 	var removed int64
 
@@ -59,16 +59,15 @@ func (s *UpstreamRemovingSanitizer) SanitizeSnapshot(ctx context.Context, glooSn
 	// TODO(marco): the function accepts and return a Snapshot interface, but then swaps in its own implementation.
 	//  This breaks the abstraction and mocking the snapshot becomes impossible. We should have a generic way of
 	//  creating snapshots.
-	xdsSnapshot = xds.NewSnapshotFromResources(
-		endpoints,
-		clusters,
-		xdsSnapshot.GetResources(xds.RouteTypev2),
-		xdsSnapshot.GetResources(xds.ListenerTypev2),
-	)
+	newSnapshot := cache_v3.Snapshot{}
+	newSnapshot.Resources[types.Endpoint] = endpoints
+	newSnapshot.Resources[types.Cluster] = clusters
+	newSnapshot.Resources[types.Route] = xdsSnapshot.Resources[types.Route]
+	newSnapshot.Resources[types.Listener] = xdsSnapshot.Resources[types.Listener]
 
 	// If the snapshot is not consistent,
-	if xdsSnapshot.Consistent() != nil {
-		return xdsSnapshot, resourcesErr
+	if (&newSnapshot).Consistent() != nil {
+		return cache_v3.Snapshot{}, resourcesErr
 	}
 
 	// Convert errors related to upstreams to warnings

@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	cache_v3 "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	syncerstats "github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
 	"github.com/solo-io/go-utils/hashutils"
 
@@ -16,8 +19,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/log"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
-	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
@@ -48,15 +49,13 @@ func init() {
 const emptyVersionKey = "empty"
 
 var (
-	emptyResource = cache.Resources{
-		Version: emptyVersionKey,
-		Items:   map[string]envoycache.Resource{},
-	}
-	emptySnapshot = xds.NewSnapshotFromResources(
-		emptyResource,
-		emptyResource,
-		emptyResource,
-		emptyResource,
+	emptySnapshot = cache_v3.NewSnapshot(
+		emptyVersionKey,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
 	)
 )
 
@@ -94,7 +93,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 			xds.FallbackNodeKey: true,
 		}
 		// Get all envoy node ID keys
-		for _, key := range s.xdsCache.GetStatusKeys() {
+		for _, key := range s.envoyXdsCache.GetStatusKeys() {
 			allKeys[key] = false
 		}
 		// Get all valid node ID keys
@@ -104,7 +103,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 		// preserve keys from the current list of proxies, set previous invalid snapshots to empty snapshot
 		for key, valid := range allKeys {
 			if !valid {
-				if err := s.xdsCache.SetSnapshot(key, emptySnapshot); err != nil {
+				if err := s.envoyXdsCache.SetSnapshot(key, emptySnapshot); err != nil {
 					return err
 				}
 			}
@@ -153,17 +152,17 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 			logger.Infof("successfully updated EDS information for proxy %v", proxy.Metadata.Ref().Key())
 		}
 
-		if err := s.xdsCache.SetSnapshot(key, sanitizedSnapshot); err != nil {
+		if err := s.envoyXdsCache.SetSnapshot(key, sanitizedSnapshot); err != nil {
 			err := eris.Wrapf(err, "failed while updating xDS snapshot cache")
 			logger.DPanicw("", zap.Error(err))
 			return err
 		}
 
 		// Record some metrics
-		clustersLen := len(xdsSnapshot.GetResources(xds.ClusterTypev2).Items)
-		listenersLen := len(xdsSnapshot.GetResources(xds.ListenerTypev2).Items)
-		routesLen := len(xdsSnapshot.GetResources(xds.RouteTypev2).Items)
-		endpointsLen := len(xdsSnapshot.GetResources(xds.EndpointTypev2).Items)
+		clustersLen := len(xdsSnapshot.GetResources(resource.ClusterType))
+		listenersLen := len(xdsSnapshot.GetResources(resource.ListenerType))
+		routesLen := len(xdsSnapshot.GetResources(resource.RouteType))
+		endpointsLen := len(xdsSnapshot.GetResources(resource.EndpointType))
 
 		measureResource(proxyCtx, "clusters", clustersLen)
 		measureResource(proxyCtx, "listeners", listenersLen)
@@ -192,7 +191,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 func (s *translatorSyncer) ServeXdsSnapshots() error {
 	r := mux.NewRouter()
 	r.HandleFunc("/xds", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprintf(w, log.Sprintf("%v", s.xdsCache))
+		_, _ = fmt.Fprintf(w, log.Sprintf("%v", s.skXdsCache))
 	})
 	r.HandleFunc("/api", func(w http.ResponseWriter, r *http.Request) {
 		_, _ = fmt.Fprintf(w, log.Sprintf("%v", s.latestSnap))
@@ -205,24 +204,21 @@ func (s *translatorSyncer) ServeXdsSnapshots() error {
 // - CDS/LDS/RDS information from the previous xDS snapshot
 // - EDS from the Gloo API snapshot translated curing this sync
 // The resulting snapshot will be checked for consistency before being returned.
-func (s *translatorSyncer) updateEndpointsOnly(snapshotKey string, current envoycache.Snapshot) (envoycache.Snapshot, error) {
+func (s *translatorSyncer) updateEndpointsOnly(snapshotKey string, current cache_v3.Snapshot) (cache_v3.Snapshot, error) {
 	// Get a copy of the last successful snapshot
-	previous, err := s.xdsCache.GetSnapshot(snapshotKey)
+	previous, err := s.envoyXdsCache.GetSnapshot(snapshotKey)
 	if err != nil {
-		return nil, err
+		return cache_v3.Snapshot{}, err
 	}
 
-	newSnapshot := xds.NewSnapshotFromResources(
-		// Set endpoints and clusters calculated during this sync
-		current.GetResources(xds.EndpointTypev2),
-		current.GetResources(xds.ClusterTypev2),
-		// Keep other resources from previous snapshot
-		previous.GetResources(xds.RouteTypev2),
-		previous.GetResources(xds.ListenerTypev2),
-	)
+	newSnapshot := cache_v3.Snapshot{}
+	newSnapshot.Resources[types.Route] = previous.Resources[types.Route]
+	newSnapshot.Resources[types.Listener] = previous.Resources[types.Listener]
+	newSnapshot.Resources[types.Endpoint] = current.Resources[types.Endpoint]
+	newSnapshot.Resources[types.Cluster] = current.Resources[types.Cluster]
 
-	if err := newSnapshot.Consistent(); err != nil {
-		return nil, err
+	if err = (&newSnapshot).Consistent(); err != nil {
+		return cache_v3.Snapshot{}, err
 	}
 
 	return newSnapshot, nil

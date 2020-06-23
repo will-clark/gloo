@@ -2,6 +2,7 @@ package syncer_test
 
 import (
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	cache_v3 "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
@@ -154,7 +155,7 @@ type mockTranslator struct {
 	reportErrs bool
 }
 
-func (t *mockTranslator) Translate(params plugins.Params, proxy *v1.Proxy) (envoycache.Snapshot, reporter.ResourceReports, *validation.ProxyReport, error) {
+func (t *mockTranslator) Translate(params plugins.Params, proxy *v1.Proxy) (cache_v3.Snapshot, reporter.ResourceReports, *validation.ProxyReport, error) {
 	if t.reportErrs {
 		rpts := reporter.ResourceReports{}
 		rpts.AddError(proxy, errors.Errorf("hi, how ya doin'?"))
@@ -212,7 +213,7 @@ type mockXdsSanitizer struct {
 	err    error
 }
 
-func (s *mockXdsSanitizer) SanitizeSnapshot(ctx context.Context, glooSnapshot *v1.ApiSnapshot, xdsSnapshot envoycache.Snapshot, reports reporter.ResourceReports) (envoycache.Snapshot, error) {
+func (s *mockXdsSanitizer) SanitizeSnapshot(ctx context.Context, glooSnapshot *v1.ApiSnapshot, xdsSnapshot cache_v3.Snapshot, reports reporter.ResourceReports) (interface{}, error) {
 	s.called = true
 	if s.snap != nil {
 		return s.snap, nil

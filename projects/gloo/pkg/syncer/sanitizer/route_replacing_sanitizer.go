@@ -8,6 +8,8 @@ import (
 	endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	cache_v3 "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
@@ -24,9 +26,7 @@ import (
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
-	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
-	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
@@ -150,7 +150,7 @@ func makeFallbackListenerAndCluster(responseCode uint32, responseBody string) (*
 	return fallbackListener, fallbackCluster, nil
 }
 
-func (s *RouteReplacingSanitizer) SanitizeSnapshot(ctx context.Context, glooSnapshot *v1.ApiSnapshot, xdsSnapshot envoycache.Snapshot, reports reporter.ResourceReports) (envoycache.Snapshot, error) {
+func (s *RouteReplacingSanitizer) SanitizeSnapshot(ctx context.Context, glooSnapshot *v1.ApiSnapshot, xdsSnapshot cache_v3.Snapshot, reports reporter.ResourceReports) (cache_v3.Snapshot, error) {
 	if !s.enabled {
 		// if if the route sanitizer is not enabled, enforce strict validation of routes (warnings are treated as errors)
 		// this is necessary because the translator only uses Validate() which ignores warnings
@@ -163,7 +163,7 @@ func (s *RouteReplacingSanitizer) SanitizeSnapshot(ctx context.Context, glooSnap
 
 	routeConfigs, err := getRoutes(xdsSnapshot)
 	if err != nil {
-		return nil, err
+		return cache_v3.Snapshot{}, err
 	}
 
 	// mark all valid destination clusters
@@ -171,35 +171,34 @@ func (s *RouteReplacingSanitizer) SanitizeSnapshot(ctx context.Context, glooSnap
 
 	replacedRouteConfigs, needsListener := s.replaceMissingClusterRoutes(ctx, validClusters, routeConfigs)
 
-	clusters := xdsSnapshot.GetResources(xds.ClusterTypev2)
-	listeners := xdsSnapshot.GetResources(xds.ListenerTypev2)
+	clusters := xdsSnapshot.Resources[types.Cluster]
+	listeners := xdsSnapshot.Resources[types.Listener]
 
 	if needsListener {
 		s.insertFallbackListener(&listeners)
 		s.insertFallbackCluster(&clusters)
 	}
 
-	xdsSnapshot = xds.NewSnapshotFromResources(
-		xdsSnapshot.GetResources(xds.EndpointTypev2),
-		clusters,
-		translator.MakeRdsResources(replacedRouteConfigs),
-		listeners,
-	)
+	newSnapshot := cache_v3.Snapshot{}
+	newSnapshot.Resources[types.Cluster] = clusters
+	newSnapshot.Resources[types.Listener] = listeners
+	newSnapshot.Resources[types.Route] = translator.MakeRdsResources(replacedRouteConfigs)
+	newSnapshot.Resources[types.Endpoint] = xdsSnapshot.Resources[types.Endpoint]
 
 	// If the snapshot is not consistent, error
-	if err := xdsSnapshot.Consistent(); err != nil {
+	if err := (&newSnapshot).Consistent(); err != nil {
 		return xdsSnapshot, err
 	}
 
-	return xdsSnapshot, nil
+	return newSnapshot, nil
 }
 
-func getRoutes(snap envoycache.Snapshot) ([]*envoyroute.RouteConfiguration, error) {
-	routeConfigProtos := snap.GetResources(xds.RouteTypev2)
+func getRoutes(snap cache_v3.Snapshot) ([]*envoyroute.RouteConfiguration, error) {
+	routeConfigProtos := snap.Resources[types.Route]
 	var routeConfigs []*envoyroute.RouteConfiguration
 
 	for _, routeConfigProto := range routeConfigProtos.Items {
-		routeConfig, ok := routeConfigProto.ResourceProto().(*envoyroute.RouteConfiguration)
+		routeConfig, ok := routeConfigProto.(*envoyroute.RouteConfiguration)
 		if !ok {
 			return nil, eris.Errorf("invalid type, expected *envoyroute.RouteConfiguration, found %T", routeConfigProto)
 		}
@@ -281,24 +280,20 @@ func (s *RouteReplacingSanitizer) replaceMissingClusterRoutes(ctx context.Contex
 	return sanitizedRouteConfigs, anyRoutesReplaced
 }
 
-func (s *RouteReplacingSanitizer) insertFallbackListener(listeners *envoycache.Resources) {
+func (s *RouteReplacingSanitizer) insertFallbackListener(listeners *cache_v3.Resources) {
 	if listeners.Items == nil {
-		listeners.Items = map[string]envoycache.Resource{}
+		listeners.Items = map[string]types.Resource{}
 	}
 
-	listener := xds.NewEnvoyResource(s.fallbackListener)
-
-	listeners.Items[listener.Self().Name] = listener
+	listeners.Items[s.fallbackListener.GetName()] = s.fallbackListener
 	listeners.Version += "-with-fallback-listener"
 }
 
-func (s *RouteReplacingSanitizer) insertFallbackCluster(clusters *envoycache.Resources) {
+func (s *RouteReplacingSanitizer) insertFallbackCluster(clusters *cache_v3.Resources) {
 	if clusters.Items == nil {
-		clusters.Items = map[string]envoycache.Resource{}
+		clusters.Items = map[string]types.Resource{}
 	}
 
-	cluster := xds.NewEnvoyResource(s.fallbackCluster)
-
-	clusters.Items[cluster.Self().Name] = cluster
+	clusters.Items[s.fallbackCluster.GetName()] = s.fallbackCluster
 	clusters.Version += "-with-fallback-cluster"
 }

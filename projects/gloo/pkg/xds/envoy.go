@@ -3,7 +3,6 @@ package xds
 import (
 	"fmt"
 
-	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/service/cluster/v3"
@@ -15,8 +14,6 @@ import (
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
-	envoyserver "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 	"google.golang.org/grpc"
 )
 
@@ -71,22 +68,6 @@ func GetValidKeys(proxies v1.ProxyList, extensionKeys map[string]struct{}) []str
 		validKeys = append(validKeys, key)
 	}
 	return validKeys
-}
-
-// register xDS V2 methods with GRPC server
-func SetupEnvoyXdsV2(grpcServer *grpc.Server, xdsServer envoyserver.Server, envoyCache envoycache.SnapshotCache) {
-
-	// check if we need to register
-	if _, ok := grpcServer.GetServiceInfo()["envoy.api.v2.EndpointDiscoveryService"]; ok {
-		return
-	}
-	envoyServer := NewEnvoyServer(xdsServer)
-
-	v2.RegisterEndpointDiscoveryServiceServer(grpcServer, envoyServer)
-	v2.RegisterClusterDiscoveryServiceServer(grpcServer, envoyServer)
-	v2.RegisterRouteDiscoveryServiceServer(grpcServer, envoyServer)
-	v2.RegisterListenerDiscoveryServiceServer(grpcServer, envoyServer)
-	_ = envoyCache.SetSnapshot(FallbackNodeKey, fallbackSnapshotV2(fallbackBindAddr, fallbackBindPort, fallbackStatusCode))
 }
 
 // Returns the node.metadata.role from the envoy bootstrap config

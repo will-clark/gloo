@@ -9,6 +9,7 @@ import (
 	"time"
 
 	envoyv2 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
+	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	cache_v3 "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	server_v3 "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"github.com/gogo/protobuf/types"
@@ -114,13 +115,14 @@ type setupSyncer struct {
 }
 
 func NewControlPlane(ctx context.Context, grpcServer *grpc.Server, bindAddr net.Addr, callbacks xdsserver.Callbacks, start bool) bootstrap.ControlPlane {
-	hasherV2 := &xds.ProxyKeyHasherV2{}
+	hasherV2 := xds.NewNodeHasherV2()
 	snapshotCache := cache.NewSnapshotCache(true, hasherV2, contextutils.LoggerFrom(ctx))
 	xdsServer := server.NewServer(snapshotCache, callbacks)
-	hasherV3 := &xds.ProxyKeyHasherV3{}
+	hasherV3 := xds.NewNodeHasherV3()
 	snapshotCacheV3 := cache_v3.NewSnapshotCache(true, hasherV3, contextutils.LoggerFrom(ctx))
 	xdsServerV3 := server_v3.NewServer(ctx, snapshotCacheV3, nil)
 	envoyv2.RegisterAggregatedDiscoveryServiceServer(grpcServer, xdsServer)
+	envoy_service_discovery_v3.RegisterAggregatedDiscoveryServiceServer(grpcServer, xdsServerV3)
 	reflection.Register(grpcServer)
 
 	return bootstrap.ControlPlane{
@@ -130,8 +132,8 @@ func NewControlPlane(ctx context.Context, grpcServer *grpc.Server, bindAddr net.
 			BindAddr:        bindAddr,
 			Ctx:             ctx,
 		},
-		SnapshotCacheV2: snapshotCache,
-		XDSServerV2:     xdsServer,
+		SkSnapshotCache: snapshotCache,
+		SkXDSServer:     xdsServer,
 		SnapshotCacheV3: snapshotCacheV3,
 		XDSServerV3:     xdsServerV3,
 	}
@@ -411,9 +413,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}
 
 	// Register grpc endpoints to the grpc server
-	xds.SetupEnvoyXdsV2(opts.ControlPlane.GrpcServer, opts.ControlPlane.XDSServerV2, opts.ControlPlane.SnapshotCacheV2)
 	xds.SetupEnvoyXdsV3(opts.ControlPlane.GrpcServer, opts.ControlPlane.XDSServerV3, opts.ControlPlane.SnapshotCacheV3)
-	xdsHasher := xds.NewNodeHasherV2()
 	getPlugins := GetPluginsWithExtensions(opts, extensions)
 	var discoveryPlugins []discovery.DiscoveryPlugin
 	for _, plug := range getPlugins() {
@@ -496,7 +496,16 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		syncerExtensions = append(syncerExtensions, syncerExtension)
 	}
 
-	translationSync := NewTranslatorSyncer(t, opts.ControlPlane.SnapshotCacheV2, xdsHasher, xdsSanitizer, rpt, opts.DevMode, syncerExtensions, opts.Settings)
+	translationSync := NewTranslatorSyncer(
+		t,
+		opts.ControlPlane.SkSnapshotCache,
+		opts.ControlPlane.SnapshotCacheV3,
+		xdsSanitizer,
+		rpt,
+		opts.DevMode,
+		syncerExtensions,
+		opts.Settings,
+	)
 
 	syncers := v1.ApiSyncers{
 		translationSync,
