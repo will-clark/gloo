@@ -3,14 +3,13 @@ package upstreamconn_test
 import (
 	"time"
 
+	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/gogo/protobuf/types"
-
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
-
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/upstreamconn"
@@ -22,10 +21,10 @@ var _ = Describe("Plugin", func() {
 		params   plugins.Params
 		plugin   *Plugin
 		upstream *v1.Upstream
-		out      *envoyapi.Cluster
+		out      *envoycluster.Cluster
 	)
 	BeforeEach(func() {
-		out = new(envoyapi.Cluster)
+		out = new(envoycluster.Cluster)
 
 		params = plugins.Params{}
 		upstream = &v1.Upstream{}

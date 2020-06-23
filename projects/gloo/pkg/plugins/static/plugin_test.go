@@ -1,17 +1,17 @@
 package static
 
 import (
-	envoyendpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
+	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyendpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-
-	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 
 var _ = Describe("Plugin", func() {
@@ -21,12 +21,12 @@ var _ = Describe("Plugin", func() {
 		params       plugins.Params
 		upstream     *v1.Upstream
 		upstreamSpec *v1static.UpstreamSpec
-		out          *envoyapi.Cluster
+		out          *envoycluster.Cluster
 	)
 
 	BeforeEach(func() {
 		p = new(plugin)
-		out = new(envoyapi.Cluster)
+		out = new(envoycluster.Cluster)
 
 		p.Init(plugins.InitParams{})
 		upstreamSpec = &v1static.UpstreamSpec{
@@ -59,7 +59,7 @@ var _ = Describe("Plugin", func() {
 
 		It("use strict dns", func() {
 			p.ProcessUpstream(params, upstream, out)
-			Expect(out.GetType()).To(Equal(envoyapi.Cluster_STRICT_DNS))
+			Expect(out.GetType()).To(Equal(envoycluster.Cluster_STRICT_DNS))
 		})
 
 		It("use static if only has ips", func() {
@@ -72,7 +72,7 @@ var _ = Describe("Plugin", func() {
 			}}
 
 			p.ProcessUpstream(params, upstream, out)
-			Expect(out.GetType()).To(Equal(envoyapi.Cluster_STATIC))
+			Expect(out.GetType()).To(Equal(envoycluster.Cluster_STATIC))
 			expected := []*envoyendpoint.LocalityLbEndpoints{
 				&envoyendpoint.LocalityLbEndpoints{
 					LbEndpoints: []*envoyendpoint.LbEndpoint{
@@ -134,7 +134,7 @@ var _ = Describe("Plugin", func() {
 			}}
 
 			p.ProcessUpstream(params, upstream, out)
-			Expect(out.GetType()).To(Equal(envoyapi.Cluster_STRICT_DNS))
+			Expect(out.GetType()).To(Equal(envoycluster.Cluster_STRICT_DNS))
 		})
 	})
 

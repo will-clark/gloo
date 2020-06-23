@@ -7,13 +7,13 @@ import (
 	listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	cache_v3 "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/golang/protobuf/ptypes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
-	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
-	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
@@ -186,16 +186,10 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 			},
 		}
 
-		xdsSnapshot := xds.NewSnapshotFromResources(
-			envoycache.NewResources("", nil),
-			envoycache.NewResources("", nil),
-			envoycache.NewResources("routes", []envoycache.Resource{
-				xds.NewEnvoyResource(routeCfg),
-			}),
-			envoycache.NewResources("listeners", []envoycache.Resource{
-				xds.NewEnvoyResource(listener),
-			}),
-		)
+		xdsSnapshot := cache_v3.Snapshot{}
+		xdsSnapshot.Resources[types.Route] = cache_v3.NewResources("routes", []types.Resource{routeCfg})
+		xdsSnapshot.Resources[types.Listener] = cache_v3.NewResources("listeners", []types.Resource{listener})
+
 
 		sanitizer, err := NewRouteReplacingSanitizer(invalidCfgPolicy)
 		Expect(err).NotTo(HaveOccurred())
@@ -214,16 +208,16 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 		snap, err := sanitizer.SanitizeSnapshot(context.TODO(), glooSnapshot, xdsSnapshot, reports)
 		Expect(err).NotTo(HaveOccurred())
 
-		routeCfgs := snap.GetResources(xds.RouteTypev2)
-		listeners := snap.GetResources(xds.ListenerTypev2)
-		clusters := snap.GetResources(xds.ClusterTypev2)
+		routeCfgs := snap.Resources[types.Route]
+		listeners := snap.Resources[types.Listener]
+		clusters := snap.Resources[types.Cluster]
 
 		sanitizedRoutes := routeCfgs.Items[routeCfg.GetName()]
 		listenersWithFallback := listeners.Items[fallbackListenerName]
 		clustersWithFallback := clusters.Items[fallbackClusterName]
 
-		Expect(sanitizedRoutes.ResourceProto()).To(Equal(expectedRoutes))
-		Expect(listenersWithFallback.ResourceProto()).To(Equal(sanitizer.fallbackListener))
-		Expect(clustersWithFallback.ResourceProto()).To(Equal(sanitizer.fallbackCluster))
+		Expect(sanitizedRoutes).To(Equal(expectedRoutes))
+		Expect(listenersWithFallback).To(Equal(sanitizer.fallbackListener))
+		Expect(clustersWithFallback).To(Equal(sanitizer.fallbackCluster))
 	})
 })

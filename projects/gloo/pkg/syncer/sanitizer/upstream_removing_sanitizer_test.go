@@ -4,13 +4,13 @@ import (
 	"context"
 
 	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	cache_v3 "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
-	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
-	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 
@@ -43,15 +43,10 @@ var _ = Describe("UpstreamRemovingSanitizer", func() {
 	)
 	It("removes upstreams whose reports have an error, and changes the error to a warning", func() {
 
-		xdsSnapshot := xds.NewSnapshotFromResources(
-			envoycache.NewResources("", nil),
-			envoycache.NewResources("clusters", []envoycache.Resource{
-				xds.NewEnvoyResource(goodCluster),
-				xds.NewEnvoyResource(badCluster),
-			}),
-			envoycache.NewResources("", nil),
-			envoycache.NewResources("", nil),
-		)
+		xdsSnapshot := cache_v3.Snapshot{}
+		xdsSnapshot.Resources[types.Cluster] = cache_v3.NewResources("clusters", []types.Resource{
+			goodCluster, badCluster,
+		})
 
 		sanitizer := NewUpstreamRemovingSanitizer()
 
@@ -72,10 +67,10 @@ var _ = Describe("UpstreamRemovingSanitizer", func() {
 		snap, err := sanitizer.SanitizeSnapshot(context.TODO(), glooSnapshot, xdsSnapshot, reports)
 		Expect(err).NotTo(HaveOccurred())
 
-		clusters := snap.GetResources(xds.ClusterTypev2)
+		clusters := snap.Resources[types.Cluster]
 
 		Expect(clusters.Items).To(HaveLen(1))
-		Expect(clusters.Items[goodClusterName].ResourceProto()).To(Equal(goodCluster))
+		Expect(clusters.Items[goodClusterName]).To(Equal(goodCluster))
 
 		Expect(reports[badUs]).To(Equal(reporter.Report{
 			Warnings: []string{"don't get me started"},
