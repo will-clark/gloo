@@ -20,12 +20,12 @@ import (
 	envoy_service_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/service/listener/v3"
 	envoy_service_route_v3 "github.com/envoyproxy/go-control-plane/envoy/service/route/v3"
 	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/go-utils/protoutils"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"sigs.k8s.io/yaml"
@@ -293,9 +293,11 @@ func (xd *XdsDump) String() string {
 }
 
 func toYaml(pb proto.Message) ([]byte, error) {
-	jsn, err := protoutils.MarshalBytes(pb)
+	buf := &bytes.Buffer{}
+	jpb := &jsonpb.Marshaler{}
+	err := jpb.Marshal(buf, pb)
 	if err != nil {
 		return nil, err
 	}
-	return yaml.JSONToYAML(jsn)
+	return yaml.JSONToYAML(buf.Bytes())
 }
