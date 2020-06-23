@@ -15,12 +15,14 @@ import (
 )
 
 type translatorSyncer struct {
-	translator    translator.Translator
-	sanitizer     sanitizer.XdsSanitizer
-	skXdsCache    envoycache.SnapshotCache
+	translator translator.Translator
+	sanitizer  sanitizer.XdsSanitizer
+	// solo-kit xDS cache, used to store generic resources such as rate-limiting/extauth
+	// This is the xDS cache passed to the `TranslatorSyncerExtension`
+	skXdsCache envoycache.SnapshotCache
+	// V3 xDS cache, used to store envoy V3 resources
 	envoyXdsCache cache_v3.SnapshotCache
-
-	reporter reporter.Reporter
+	reporter      reporter.Reporter
 	// used for debugging purposes only
 	latestSnap *v1.ApiSnapshot
 	extensions []TranslatorSyncerExtension
@@ -76,6 +78,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 	}
 	s.extensionKeys = map[string]struct{}{}
 	for _, extension := range s.extensions {
+		// Make sure to call extensions with the solo-kit cache which supports generic resources
 		nodeID, err := extension.Sync(ctx, snap, s.skXdsCache)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)

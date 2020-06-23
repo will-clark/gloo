@@ -93,7 +93,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 		allKeys := map[string]bool{
 			xds.FallbackNodeKey: true,
 		}
-		// Get all envoy node ID keys
+		// Get all envoy node ID keys from V3 cache
 		for _, key := range s.envoyXdsCache.GetStatusKeys() {
 			allKeys[key] = false
 		}
@@ -192,7 +192,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 func (s *translatorSyncer) ServeXdsSnapshots() error {
 	r := mux.NewRouter()
 	r.HandleFunc("/xds", func(w http.ResponseWriter, r *http.Request) {
-		_, _ = fmt.Fprintf(w, log.Sprintf("%v", s.skXdsCache))
+		_, _ = fmt.Fprintf(w, log.Sprintf("%v", s.envoyXdsCache))
 	})
 	r.HandleFunc("/api", func(w http.ResponseWriter, r *http.Request) {
 		_, _ = fmt.Fprintf(w, log.Sprintf("%v", s.latestSnap))

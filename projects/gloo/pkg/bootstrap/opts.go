@@ -50,9 +50,13 @@ type Consul struct {
 
 type ControlPlane struct {
 	*GrpcService
+	// The generic snapshot cache used by the sk Xds Server. Can handle generic resources such as rate-limiting/extauth
 	SkSnapshotCache cache.SnapshotCache
+	// solo-kit XDS server, works via ADS V2
 	SkXDSServer     server.Server
+	// Snapshot cache used by go-control-plane XDS server V3
 	SnapshotCacheV3 cache_v3.SnapshotCache
+	// go-control-plane XDS server, works via ADS V3
 	XDSServerV3     server_v3.Server
 }
 
