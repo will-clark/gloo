@@ -49,13 +49,14 @@ func init() {
 const emptyVersionKey = "empty"
 
 var (
+	// default empty snapshot, all resources are empty
 	emptySnapshot = cache_v3.NewSnapshot(
 		emptyVersionKey,
-		nil,
-		nil,
-		nil,
-		nil,
-		nil,
+		nil, // endpoint list
+		nil, // cluster list
+		nil, // route list
+		nil, // listener list
+		nil, // rtds layer list (not implemented)
 	)
 )
 

@@ -108,14 +108,14 @@ var _ = Describe("Translate Proxy", func() {
 		Expect(xdsCache.called).To(BeTrue())
 	})
 
-	// It("updates the cache with the sanitized snapshot", func() {
-	// 	sanitizer.snap = envoycache.NewEasyGenericSnapshot("easy")
-	// 	err := syncer.Sync(context.Background(), snap)
-	// 	Expect(err).NotTo(HaveOccurred())
-	//
-	// 	Expect(sanitizer.called).To(BeTrue())
-	// 	Expect(xdsCache.setSnap).To(BeEquivalentTo(sanitizer.snap))
-	// })
+	It("updates the cache with the sanitized snapshot", func() {
+		sanitizer.snap = &cache_v3.Snapshot{}
+		err := syncer.Sync(context.Background(), snap)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(sanitizer.called).To(BeTrue())
+		Expect(xdsCache.setSnap).To(BeEquivalentTo(sanitizer.snap))
+	})
 
 	It("uses listeners and routes from the previous snapshot when sanitization fails", func() {
 		sanitizer.err = errors.Errorf("we ran out of coffee")
