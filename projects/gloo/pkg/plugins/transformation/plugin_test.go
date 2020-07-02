@@ -6,8 +6,9 @@ import (
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
+	envoytransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
 )
@@ -15,16 +16,19 @@ import (
 var _ = Describe("Plugin", func() {
 	var (
 		p        *Plugin
-		t        *transformation.RouteTransformations
+		t        *transformation.Transformations
 		expected *structpb.Struct
 	)
 
 	BeforeEach(func() {
 		p = NewPlugin()
-		t = &transformation.RouteTransformations{
+		t = &transformation.Transformations{
 			ClearRouteCache: true,
 		}
-		configStruct, err := conversion.MessageToStruct(t)
+		e := &envoytransformation.RouteTransformations{
+			ClearRouteCache: true,
+		}
+		configStruct, err := conversion.MessageToStruct(e)
 		Expect(err).NotTo(HaveOccurred())
 
 		expected = configStruct

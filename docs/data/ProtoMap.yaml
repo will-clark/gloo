@@ -923,6 +923,9 @@ apis:
   transformation.options.gloo.solo.io.Parameters:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/parameters.proto.sk/#Parameters
     package: transformation.options.gloo.solo.io
+  transformation.options.gloo.solo.io.Transformations:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto.sk/#Transformations
+    package: transformation.options.gloo.solo.io
   validate.AnyRules:
     relativepath: reference/api/github.com/envoyproxy/protoc-gen-validate/validate/validate.proto.sk/#AnyRules
     package: validate

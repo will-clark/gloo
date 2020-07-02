@@ -4,7 +4,9 @@ import (
 	"context"
 
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
+	transformation "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
+
+	envoytransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -37,13 +39,14 @@ func (p *Plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.Vir
 		return nil
 	}
 
-	err := validateTransformation(params.Ctx, transformations)
+	envoyTransformation := convertTransformation(transformations)
+	err := validateTransformation(params.Ctx, envoyTransformation)
 	if err != nil {
 		return err
 	}
 
 	p.RequireTransformationFilter = true
-	return pluginutils.SetVhostPerFilterConfig(out, FilterName, transformations)
+	return pluginutils.SetVhostPerFilterConfig(out, FilterName, envoyTransformation)
 }
 
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
@@ -52,13 +55,14 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		return nil
 	}
 
-	err := validateTransformation(params.Ctx, transformations)
+	envoyTransformation := convertTransformation(transformations)
+	err := validateTransformation(params.Ctx, envoyTransformation)
 	if err != nil {
 		return err
 	}
 
 	p.RequireTransformationFilter = true
-	return pluginutils.SetRoutePerFilterConfig(out, FilterName, transformations)
+	return pluginutils.SetRoutePerFilterConfig(out, FilterName, envoyTransformation)
 }
 
 func (p *Plugin) ProcessWeightedDestination(params plugins.RouteParams, in *v1.WeightedDestination, out *envoyroute.WeightedCluster_ClusterWeight) error {
@@ -67,13 +71,14 @@ func (p *Plugin) ProcessWeightedDestination(params plugins.RouteParams, in *v1.W
 		return nil
 	}
 
-	err := validateTransformation(params.Ctx, transformations)
+	p.RequireTransformationFilter = true
+	envoyTransformation := convertTransformation(transformations)
+	err := validateTransformation(params.Ctx, envoyTransformation)
 	if err != nil {
 		return err
 	}
 
-	p.RequireTransformationFilter = true
-	return pluginutils.SetWeightedClusterPerFilterConfig(out, FilterName, transformations)
+	return pluginutils.SetWeightedClusterPerFilterConfig(out, FilterName, envoyTransformation)
 }
 
 func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
@@ -82,7 +87,15 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 	}, nil
 }
 
-func validateTransformation(ctx context.Context, transformations *transformation.RouteTransformations) error {
+func convertTransformation(t *transformation.Transformations) *envoytransformation.RouteTransformations {
+	return &envoytransformation.RouteTransformations{
+		RequestTransformation:  t.RequestTransformation,
+		ClearRouteCache:        t.ClearRouteCache,
+		ResponseTransformation: t.ResponseTransformation,
+	}
+}
+
+func validateTransformation(ctx context.Context, transformations *envoytransformation.RouteTransformations) error {
 	err := bootstrap.ValidateBootstrap(ctx, bootstrap.BuildPerFilterBootstrapYaml(FilterName, transformations))
 	if err != nil {
 		return err

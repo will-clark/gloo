@@ -1,0 +1,21 @@
+syntax = "proto3";
+package transformation.options.gloo.solo.io;
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation";
+
+import "google/protobuf/wrappers.proto";
+import "gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto";
+
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+
+message Transformations {
+    // Apply a transformation to requests.
+    envoy.api.v2.filter.http.Transformation request_transformation = 1;
+    // Clear the route cache if the request transformation was applied.
+    bool clear_route_cache = 3;
+    // Apply a transformation to responses.
+    envoy.api.v2.filter.http.Transformation response_transformation = 2;
+  }

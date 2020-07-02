@@ -29,6 +29,7 @@ import "gloo/projects/gloo/api/v1/options/wasm/wasm.proto";
 import "gloo/projects/gloo/api/v1/options/azure/azure.proto";
 import "gloo/projects/gloo/api/v1/options/healthcheck/healthcheck.proto";
 import "gloo/projects/gloo/api/v1/options/protocol_upgrade/protocol_upgrade.proto";
+import "gloo/projects/gloo/api/v1/options/transformation/transformation.proto";
 
 import "gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto";
 import "gloo/projects/gloo/api/external/envoy/extensions/proxylatency/proxylatency.proto";
@@ -141,7 +142,7 @@ message VirtualHostOptions {
     // If a CORS policy is also defined on the route matched by the request, the policies are merged.
     cors.options.gloo.solo.io.CorsPolicy cors = 3;
     // Transformations to apply
-    envoy.api.v2.filter.http.RouteTransformations transformations = 4;
+    transformation.options.gloo.solo.io.Transformations transformations = 4;
     // Enterprise-only: Config for GlooE rate-limiting using simplified (gloo-specific) API
     ratelimit.options.gloo.solo.io.IngressRateLimit ratelimit_basic = 6;
     // Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service;
@@ -176,7 +177,7 @@ message VirtualHostOptions {
 // to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 message RouteOptions {
     // Transformations to apply
-    envoy.api.v2.filter.http.RouteTransformations transformations = 1;
+    transformation.options.gloo.solo.io.Transformations transformations = 1;
     fault.options.gloo.solo.io.RouteFaults faults = 2;
     // For requests matched on this route, rewrite the HTTP request path to the provided value before forwarding upstream
     google.protobuf.StringValue prefix_rewrite = 3;
@@ -268,7 +269,7 @@ message WeightedDestinationOptions {
     // Append/Remove headers on Requests or Responses to/from this Weighted Destination
     headers.options.gloo.solo.io.HeaderManipulation header_manipulation = 1;
     // Transformations to apply
-    envoy.api.v2.filter.http.RouteTransformations transformations = 2;
+    transformation.options.gloo.solo.io.Transformations transformations = 2;
     // Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the
     // underlying Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml.
     //
