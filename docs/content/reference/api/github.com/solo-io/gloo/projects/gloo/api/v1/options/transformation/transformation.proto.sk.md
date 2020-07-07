@@ -11,13 +11,36 @@ weight: 5
 #### Types:
 
 
+- [ResponseMatch](#responsematch)
 - [Transformations](#transformations)
+- [EarlyTransformations](#earlytransformations)
   
 
 
 
 ##### Source File: [github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/v1/options/transformation/transformation.proto)
 
+
+
+
+
+---
+### ResponseMatch
+
+
+
+```yaml
+"matchers": []matchers.core.gloo.solo.io.HeaderMatcher
+"responseCodeDetails": string
+"responseTransformation": .envoy.api.v2.filter.http.Transformation
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `matchers` | [[]matchers.core.gloo.solo.io.HeaderMatcher](../../../core/matchers/matchers.proto.sk/#headermatcher) |  |  |
+| `responseCodeDetails` | `string` |  |  |
+| `responseTransformation` | [.envoy.api.v2.filter.http.Transformation](../../../../external/envoy/extensions/transformation/transformation.proto.sk/#transformation) |  |  |
 
 
 
@@ -39,6 +62,23 @@ weight: 5
 | `requestTransformation` | [.envoy.api.v2.filter.http.Transformation](../../../../external/envoy/extensions/transformation/transformation.proto.sk/#transformation) | Apply a transformation to requests. |  |
 | `clearRouteCache` | `bool` | Clear the route cache if the request transformation was applied. |  |
 | `responseTransformation` | [.envoy.api.v2.filter.http.Transformation](../../../../external/envoy/extensions/transformation/transformation.proto.sk/#transformation) | Apply a transformation to responses. |  |
+
+
+
+
+---
+### EarlyTransformations
+
+
+
+```yaml
+"responseTransforms": []transformation.options.gloo.solo.io.ResponseMatch
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `responseTransforms` | [[]transformation.options.gloo.solo.io.ResponseMatch](../transformation.proto.sk/#responsematch) |  |  |
 
 
 

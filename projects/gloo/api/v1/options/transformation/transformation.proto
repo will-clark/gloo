@@ -4,12 +4,20 @@ package transformation.options.gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation";
 
 import "google/protobuf/wrappers.proto";
+import "gloo/projects/gloo/api/v1/core/matchers/matchers.proto";
 import "gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto";
 
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
+
+message ResponseMatch {
+    repeated matchers.core.gloo.solo.io.HeaderMatcher matchers = 1;
+    string response_code_details = 2;
+    envoy.api.v2.filter.http.Transformation response_transformation = 3;
+}
+
 
 message Transformations {
     // Apply a transformation to requests.
@@ -18,4 +26,8 @@ message Transformations {
     bool clear_route_cache = 3;
     // Apply a transformation to responses.
     envoy.api.v2.filter.http.Transformation response_transformation = 2;
-  }
+}
+
+message EarlyTransformations {
+    repeated ResponseMatch response_transforms = 1;
+}

@@ -169,6 +169,9 @@ message VirtualHostOptions {
     // Note: If you have not set a global config (at the gateway level), this
     // override will not do anything by itself.
     envoy.extensions.filters.http.buffer.v3.BufferPerRoute buffer_per_route = 14;
+
+    // Early transformations stage. These transformations run before most other options are processed.
+    transformation.options.gloo.solo.io.EarlyTransformations early_transformations = 15;
 }
 
 // Optional, feature-specific configuration that lives on routes.
@@ -249,6 +252,9 @@ message RouteOptions {
     // Note: If you have not set a global config (at the gateway level), this
     // override will not do anything by itself.
     envoy.extensions.filters.http.buffer.v3.BufferPerRoute buffer_per_route = 22;
+
+    // Early transformations stage. These transformations run before most other options are processed.
+    transformation.options.gloo.solo.io.EarlyTransformations early_transformations = 23;
 }
 
 // Configuration for Destinations that are tied to the UpstreamSpec or ServiceSpec on that destination
@@ -286,4 +292,7 @@ message WeightedDestinationOptions {
     // Note: If you have not set a global config (at the gateway level), this
     // override will not do anything by itself.
     envoy.extensions.filters.http.buffer.v3.BufferPerRoute buffer_per_route = 5;
+
+    // Early transformations stage. These transformations run before most other options are processed.
+    transformation.options.gloo.solo.io.EarlyTransformations early_transformations = 6;
 }
