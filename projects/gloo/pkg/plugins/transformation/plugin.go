@@ -118,7 +118,6 @@ func convertTransformation(ctx context.Context, t *transformation.Transformation
 		// new config:
 		// we have to have it too, as if any new config is defined the deprecated config is ignored.
 		ret.Transformations = append(ret.Transformations, &envoytransformation.RouteTransformations_RouteTransformation{
-			Stage: 0,
 			Match: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_{
 				RequestMatch: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch{
 					Match:                  nil,
