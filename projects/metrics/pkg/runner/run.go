@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net"
 
-	pb "github.com/envoyproxy/go-control-plane/envoy/service/metrics/v2"
+	pb "github.com/envoyproxy/go-control-plane/envoy/service/metrics/v3"
 	"github.com/solo-io/gloo/projects/metrics/pkg/metricsservice"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/healthchecker"

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	envoymet "github.com/envoyproxy/go-control-plane/envoy/service/metrics/v2"
+	envoymet "github.com/envoyproxy/go-control-plane/envoy/service/metrics/v3"
 	_go "github.com/prometheus/client_model/go"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"

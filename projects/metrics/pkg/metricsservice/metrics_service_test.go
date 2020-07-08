@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	v2 "github.com/envoyproxy/go-control-plane/envoy/service/metrics/v2"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	v2 "github.com/envoyproxy/go-control-plane/envoy/service/metrics/v3"
 	"github.com/gogo/protobuf/proto"
 	_go "github.com/prometheus/client_model/go"
 	"github.com/solo-io/gloo/projects/metrics/pkg/metricsservice"
