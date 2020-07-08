@@ -14,12 +14,12 @@ import (
 
 	"google.golang.org/grpc"
 
-	auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
-	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	sds "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
+	core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	auth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	sds "github.com/envoyproxy/go-control-plane/envoy/service/secret/v3"
 	cache_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
-	cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
-	server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
+	cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	server "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 )
 
 // These values must match the values in the envoy sidecar's common_tls_context
