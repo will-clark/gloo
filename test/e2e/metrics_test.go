@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync/atomic"
 
-	v2 "github.com/envoyproxy/go-control-plane/envoy/service/metrics/v2"
+	v2 "github.com/envoyproxy/go-control-plane/envoy/service/metrics/v3"
 	"github.com/fgrosse/zaptest"
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
