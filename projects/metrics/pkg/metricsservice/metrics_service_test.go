@@ -5,7 +5,7 @@ import (
 	"time"
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	v2 "github.com/envoyproxy/go-control-plane/envoy/service/metrics/v3"
+	envoymet "github.com/envoyproxy/go-control-plane/envoy/service/metrics/v3"
 	"github.com/gogo/protobuf/proto"
 	_go "github.com/prometheus/client_model/go"
 	"github.com/solo-io/gloo/projects/metrics/pkg/metricsservice"
@@ -44,8 +44,8 @@ var _ = Describe("Metrics service", func() {
 	It("can receive and store new metrics", func() {
 		envoyInstanceId := "my-envoy-id"
 
-		metrics := &v2.StreamMetricsMessage{
-			Identifier: &v2.StreamMetricsMessage_Identifier{
+		metrics := &envoymet.StreamMetricsMessage{
+			Identifier: &envoymet.StreamMetricsMessage_Identifier{
 				Node: &envoycore.Node{Id: envoyInstanceId},
 			},
 			EnvoyMetrics: []*_go.MetricFamily{
@@ -102,8 +102,8 @@ var _ = Describe("Metrics service", func() {
 	It("can receive and update metrics", func() {
 		envoyInstanceId := "my-envoy-id"
 
-		metrics := &v2.StreamMetricsMessage{
-			Identifier: &v2.StreamMetricsMessage_Identifier{
+		metrics := &envoymet.StreamMetricsMessage{
+			Identifier: &envoymet.StreamMetricsMessage_Identifier{
 				Node: &envoycore.Node{Id: envoyInstanceId},
 			},
 			EnvoyMetrics: []*_go.MetricFamily{
