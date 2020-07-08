@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync/atomic"
 
-	envoymet "github.com/envoyproxy/go-control-plane/envoy/service/metrics/v3"
+	v2 "github.com/envoyproxy/go-control-plane/envoy/service/metrics/v2"
 	"github.com/fgrosse/zaptest"
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
@@ -25,7 +25,7 @@ type testMetricsHandler struct {
 	channel chan *struct{}
 }
 
-func (t *testMetricsHandler) HandleMetrics(context.Context, *envoymet.StreamMetricsMessage) error {
+func (t *testMetricsHandler) HandleMetrics(context.Context, *v2.StreamMetricsMessage) error {
 	// just signal that we did receive metrics from envoy
 	t.channel <- &struct {
 	}{}
