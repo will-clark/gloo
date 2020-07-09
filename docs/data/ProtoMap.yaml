@@ -1106,14 +1106,20 @@ apis:
   tracing.options.gloo.solo.io.TracePercentages:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/tracing/tracing.proto.sk/#TracePercentages
     package: tracing.options.gloo.solo.io
-  transformation.options.gloo.solo.io.EarlyTransformations:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto.sk/#EarlyTransformations
-    package: transformation.options.gloo.solo.io
   transformation.options.gloo.solo.io.Parameters:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/parameters.proto.sk/#Parameters
     package: transformation.options.gloo.solo.io
+  transformation.options.gloo.solo.io.RequestMatch:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto.sk/#RequestMatch
+    package: transformation.options.gloo.solo.io
+  transformation.options.gloo.solo.io.RequestResponseTransformations:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto.sk/#RequestResponseTransformations
+    package: transformation.options.gloo.solo.io
   transformation.options.gloo.solo.io.ResponseMatch:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto.sk/#ResponseMatch
+    package: transformation.options.gloo.solo.io
+  transformation.options.gloo.solo.io.TransformationStages:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto.sk/#TransformationStages
     package: transformation.options.gloo.solo.io
   transformation.options.gloo.solo.io.Transformations:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/transformation.proto.sk/#Transformations

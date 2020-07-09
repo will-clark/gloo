@@ -27,6 +27,15 @@ var _ = Describe("Plugin", func() {
 		}
 		e := &envoytransformation.RouteTransformations{
 			ClearRouteCache: true,
+			Transformations: []*envoytransformation.RouteTransformations_RouteTransformation{
+				{
+					Match: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_{
+						RequestMatch: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch{
+							ClearRouteCache: true,
+						},
+					},
+				},
+			},
 		}
 		configStruct, err := conversion.MessageToStruct(e)
 		Expect(err).NotTo(HaveOccurred())
@@ -55,7 +64,6 @@ var _ = Describe("Plugin", func() {
 		Expect(out.PerFilterConfig).To(HaveKeyWithValue(FilterName, expected))
 	})
 	It("sets transformation config for routes", func() {
-
 		out := &envoyroute.Route{}
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
 			Options: &v1.RouteOptions{
@@ -64,5 +72,28 @@ var _ = Describe("Plugin", func() {
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(out.PerFilterConfig).To(HaveKeyWithValue(FilterName, expected))
+	})
+	It("sets filters correctly when early filters exist", func() {
+		out := &envoyroute.Route{}
+		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
+			Options: &v1.RouteOptions{
+				StagedTransformations: &transformation.TransformationStages{
+					Early: &transformation.RequestResponseTransformations{RequestTransforms: []*transformation.RequestMatch{{}}},
+				},
+			},
+		}, out)
+		filters, err := p.HttpFilters(plugins.Params{}, nil)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(filters)).To(Equal(2))
+		// not empty as stage is 1; TODO: deserialize and verify that.
+		value := filters[0].HttpFilter.GetTypedConfig().GetValue()
+		Expect(value).NotTo(BeEmpty())
+	})
+	It("sets filters correctly when no early filters exist", func() {
+		filters, err := p.HttpFilters(plugins.Params{}, nil)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(filters)).To(Equal(1))
+		value := filters[0].HttpFilter.GetTypedConfig().GetValue()
+		Expect(value).To(BeEmpty())
 	})
 })

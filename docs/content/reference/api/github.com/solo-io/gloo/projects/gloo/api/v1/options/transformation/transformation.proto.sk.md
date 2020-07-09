@@ -12,8 +12,10 @@ weight: 5
 
 
 - [ResponseMatch](#responsematch)
+- [RequestMatch](#requestmatch)
 - [Transformations](#transformations)
-- [EarlyTransformations](#earlytransformations)
+- [RequestResponseTransformations](#requestresponsetransformations)
+- [TransformationStages](#transformationstages)
   
 
 
@@ -46,6 +48,29 @@ weight: 5
 
 
 ---
+### RequestMatch
+
+
+
+```yaml
+"matcher": .matchers.core.gloo.solo.io.Matcher
+"clearRouteCache": bool
+"requestTransformation": .envoy.api.v2.filter.http.Transformation
+"responseTransformation": .envoy.api.v2.filter.http.Transformation
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `matcher` | [.matchers.core.gloo.solo.io.Matcher](../../../core/matchers/matchers.proto.sk/#matcher) |  |  |
+| `clearRouteCache` | `bool` |  |  |
+| `requestTransformation` | [.envoy.api.v2.filter.http.Transformation](../../../../external/envoy/extensions/transformation/transformation.proto.sk/#transformation) |  |  |
+| `responseTransformation` | [.envoy.api.v2.filter.http.Transformation](../../../../external/envoy/extensions/transformation/transformation.proto.sk/#transformation) |  |  |
+
+
+
+
+---
 ### Transformations
 
 
@@ -67,18 +92,39 @@ weight: 5
 
 
 ---
-### EarlyTransformations
+### RequestResponseTransformations
 
 
 
 ```yaml
+"requestTransforms": []transformation.options.gloo.solo.io.RequestMatch
 "responseTransforms": []transformation.options.gloo.solo.io.ResponseMatch
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
+| `requestTransforms` | [[]transformation.options.gloo.solo.io.RequestMatch](../transformation.proto.sk/#requestmatch) |  |  |
 | `responseTransforms` | [[]transformation.options.gloo.solo.io.ResponseMatch](../transformation.proto.sk/#responsematch) |  |  |
+
+
+
+
+---
+### TransformationStages
+
+
+
+```yaml
+"early": .transformation.options.gloo.solo.io.RequestResponseTransformations
+"regular": .transformation.options.gloo.solo.io.RequestResponseTransformations
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `early` | [.transformation.options.gloo.solo.io.RequestResponseTransformations](../transformation.proto.sk/#requestresponsetransformations) |  |  |
+| `regular` | [.transformation.options.gloo.solo.io.RequestResponseTransformations](../transformation.proto.sk/#requestresponsetransformations) |  |  |
 
 
 

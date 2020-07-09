@@ -2,14 +2,17 @@ package transformation
 
 import (
 	"context"
+	"strings"
 
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
 	"github.com/gogo/protobuf/types"
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 
 	"github.com/solo-io/gloo/pkg/utils/regexutils"
 	envoyroutev3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/route/v3"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	transformation "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 
@@ -32,6 +35,7 @@ var (
 
 type Plugin struct {
 	RequireTransformationFilter bool
+	requireEarlyTransformation  bool
 }
 
 func NewPlugin() *Plugin {
@@ -40,12 +44,13 @@ func NewPlugin() *Plugin {
 
 func (p *Plugin) Init(params plugins.InitParams) error {
 	p.RequireTransformationFilter = false
+	p.requireEarlyTransformation = false
 	return nil
 }
 
 // TODO(yuval-k): We need to figure out what\if to do in edge cases where there is cluster weight transform
 func (p *Plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.VirtualHost, out *envoyroute.VirtualHost) error {
-	envoyTransformation := convertTransformation(params.Ctx, in.GetOptions().GetTransformations(), in.GetOptions().GetEarlyTransformations())
+	envoyTransformation := p.convertTransformation(params.Ctx, in.GetOptions().GetTransformations(), in.GetOptions().GetStagedTransformations())
 	if envoyTransformation == nil {
 		return nil
 	}
@@ -60,7 +65,7 @@ func (p *Plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.Vir
 }
 
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
-	envoyTransformation := convertTransformation(params.Ctx, in.GetOptions().GetTransformations(), in.GetOptions().GetEarlyTransformations())
+	envoyTransformation := p.convertTransformation(params.Ctx, in.GetOptions().GetTransformations(), in.GetOptions().GetStagedTransformations())
 	if envoyTransformation == nil {
 		return nil
 	}
@@ -75,7 +80,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 }
 
 func (p *Plugin) ProcessWeightedDestination(params plugins.RouteParams, in *v1.WeightedDestination, out *envoyroute.WeightedCluster_ClusterWeight) error {
-	envoyTransformation := convertTransformation(params.Ctx, in.GetOptions().GetTransformations(), in.GetOptions().GetEarlyTransformations())
+	envoyTransformation := p.convertTransformation(params.Ctx, in.GetOptions().GetTransformations(), in.GetOptions().GetStagedTransformations())
 	if envoyTransformation == nil {
 		return nil
 	}
@@ -97,19 +102,23 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 	if err != nil {
 		return nil, err
 	}
-	return []plugins.StagedHttpFilter{
-		earlyFilter,
-		plugins.NewStagedFilter(FilterName, pluginStage),
-	}, nil
+	var filters []plugins.StagedHttpFilter
+	if p.requireEarlyTransformation {
+		// only add early transformations if we have to, to allow rolling gloo updates;
+		// i.e. an older envoy without stages connects to gloo, it shouldn't have 2 filters.
+		filters = append(filters, earlyFilter)
+	}
+	filters = append(filters, plugins.NewStagedFilter(FilterName, pluginStage))
+	return filters, nil
 }
 
-func convertTransformation(ctx context.Context, t *transformation.Transformations, et *transformation.EarlyTransformations) *envoytransformation.RouteTransformations {
-	if t == nil && et == nil {
+func (p *Plugin) convertTransformation(ctx context.Context, t *transformation.Transformations, stagedTransformations *transformation.TransformationStages) *envoytransformation.RouteTransformations {
+	if t == nil && stagedTransformations == nil {
 		return nil
 	}
 
 	ret := &envoytransformation.RouteTransformations{}
-	if t != nil {
+	if t != nil && stagedTransformations.GetRegular() == nil {
 		// keep deprecated config until we are sure we don't need it.
 		// on newer envoys it will be ignored.
 		ret.RequestTransformation = t.RequestTransformation
@@ -129,19 +138,42 @@ func convertTransformation(ctx context.Context, t *transformation.Transformation
 		})
 	}
 
-	for _, earlyRespTransform := range et.GetResponseTransforms() {
-		ret.Transformations = append(ret.Transformations, &envoytransformation.RouteTransformations_RouteTransformation{
-			Stage: EarlyStageNumber,
+	if early := stagedTransformations.GetEarly(); early != nil {
+		p.requireEarlyTransformation = true
+		ret.Transformations = append(ret.Transformations, getTransformations(ctx, EarlyStageNumber, early)...)
+	}
+	if regular := stagedTransformations.GetRegular(); regular != nil {
+		ret.Transformations = append(ret.Transformations, getTransformations(ctx, 0, regular)...)
+	}
+	return ret
+}
+
+func getTransformations(ctx context.Context, stage uint32, transformations *transformation.RequestResponseTransformations) []*envoytransformation.RouteTransformations_RouteTransformation {
+	var outTransformations []*envoytransformation.RouteTransformations_RouteTransformation
+	for _, transformation := range transformations.GetResponseTransforms() {
+		outTransformations = append(outTransformations, &envoytransformation.RouteTransformations_RouteTransformation{
+			Stage: stage,
 			Match: &envoytransformation.RouteTransformations_RouteTransformation_ResponseMatch_{
 				ResponseMatch: &envoytransformation.RouteTransformations_RouteTransformation_ResponseMatch{
-					Match:                  getResponseMatcher(ctx, earlyRespTransform),
-					ResponseTransformation: earlyRespTransform.ResponseTransformation,
+					Match:                  getResponseMatcher(ctx, transformation),
+					ResponseTransformation: transformation.ResponseTransformation,
 				},
 			},
 		})
 	}
 
-	return ret
+	for _, transformation := range transformations.GetRequestTransforms() {
+		outTransformations = append(outTransformations, &envoytransformation.RouteTransformations_RouteTransformation{
+			Stage: EarlyStageNumber,
+			Match: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_{
+				RequestMatch: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch{
+					Match:                 getRequestMatcher(ctx, transformation.GetMatcher()),
+					RequestTransformation: transformation.RequestTransformation,
+				},
+			},
+		})
+	}
+	return outTransformations
 }
 
 func validateTransformation(ctx context.Context, transformations *envoytransformation.RouteTransformations) error {
@@ -152,9 +184,10 @@ func validateTransformation(ctx context.Context, transformations *envoytransform
 	return nil
 }
 
+// Note: these are copied from the translator and adapter to v3 apis
 func getResponseMatcher(ctx context.Context, m *transformation.ResponseMatch) *envoytransformation.ResponseMatcher {
 	matcher := &envoytransformation.ResponseMatcher{
-		Headers: envoyHeaderMatcher(ctx, m.Matchers),
+		Headers: envoyHeaderMatcher(ctx, m.GetMatchers()),
 	}
 	if m.ResponseCodeDetails != "" {
 		matcher.ResponseCodeDetails = &v3.StringMatcher{
@@ -164,6 +197,76 @@ func getResponseMatcher(ctx context.Context, m *transformation.ResponseMatch) *e
 	return matcher
 }
 
+func getRequestMatcher(ctx context.Context, matcher *matchers.Matcher) *envoyroutev3.RouteMatch {
+	match := &envoyroutev3.RouteMatch{
+		Headers:         envoyHeaderMatcher(ctx, matcher.GetHeaders()),
+		QueryParameters: envoyQueryMatcher(ctx, matcher.GetQueryParameters()),
+	}
+	if len(matcher.GetMethods()) > 0 {
+		match.Headers = append(match.Headers, &envoyroutev3.HeaderMatcher{
+			Name: ":method",
+			HeaderMatchSpecifier: &envoyroutev3.HeaderMatcher_SafeRegexMatch{
+				SafeRegexMatch: convertRegex(regexutils.NewRegex(ctx, strings.Join(matcher.Methods, "|"))),
+			},
+		})
+	}
+	// need to do this because Go's proto implementation makes oneofs private
+	// which genius thought of that?
+	setEnvoyPathMatcher(ctx, matcher, match)
+	return match
+}
+
+func setEnvoyPathMatcher(ctx context.Context, in *matchers.Matcher, out *envoyroutev3.RouteMatch) {
+	switch path := in.GetPathSpecifier().(type) {
+	case *matchers.Matcher_Exact:
+		out.PathSpecifier = &envoyroutev3.RouteMatch_Path{
+			Path: path.Exact,
+		}
+	case *matchers.Matcher_Regex:
+		out.PathSpecifier = &envoyroutev3.RouteMatch_SafeRegex{
+			SafeRegex: convertRegex(regexutils.NewRegex(ctx, path.Regex)),
+		}
+	case *matchers.Matcher_Prefix:
+		out.PathSpecifier = &envoyroutev3.RouteMatch_Prefix{
+			Prefix: path.Prefix,
+		}
+	}
+}
+
+func envoyQueryMatcher(ctx context.Context, in []*matchers.QueryParameterMatcher) []*envoyroutev3.QueryParameterMatcher {
+	var out []*envoyroutev3.QueryParameterMatcher
+	for _, matcher := range in {
+		envoyMatch := &envoyroutev3.QueryParameterMatcher{
+			Name: matcher.Name,
+		}
+
+		if matcher.Value == "" {
+			envoyMatch.QueryParameterMatchSpecifier = &envoyroutev3.QueryParameterMatcher_PresentMatch{
+				PresentMatch: true,
+			}
+		} else {
+			if matcher.Regex {
+				envoyMatch.QueryParameterMatchSpecifier = &envoyroutev3.QueryParameterMatcher_StringMatch{
+					StringMatch: &v3.StringMatcher{
+						MatchPattern: &v3.StringMatcher_SafeRegex{
+							SafeRegex: convertRegex(regexutils.NewRegex(ctx, matcher.Value)),
+						},
+					},
+				}
+			} else {
+				envoyMatch.QueryParameterMatchSpecifier = &envoyroutev3.QueryParameterMatcher_StringMatch{
+					StringMatch: &v3.StringMatcher{
+						MatchPattern: &v3.StringMatcher_Exact{
+							Exact: matcher.Value,
+						},
+					},
+				}
+			}
+		}
+		out = append(out, envoyMatch)
+	}
+	return out
+}
 func convertUint32(i *wrappers.UInt32Value) *types.UInt32Value {
 	if i == nil {
 		return nil
@@ -187,10 +290,7 @@ func envoyHeaderMatcher(ctx context.Context, in []*matchers.HeaderMatcher) []*en
 			if matcher.Regex {
 				regex := regexutils.NewRegex(ctx, matcher.Value)
 				envoyMatch.HeaderMatchSpecifier = &envoyroutev3.HeaderMatcher_SafeRegexMatch{
-					SafeRegexMatch: &v3.RegexMatcher{
-						EngineType: &v3.RegexMatcher_GoogleRe2{GoogleRe2: &v3.RegexMatcher_GoogleRE2{MaxProgramSize: convertUint32(regex.GetGoogleRe2().GetMaxProgramSize())}},
-						Regex:      regex.Regex,
-					},
+					SafeRegexMatch: convertRegex(regex),
 				}
 			} else {
 				envoyMatch.HeaderMatchSpecifier = &envoyroutev3.HeaderMatcher_ExactMatch{
@@ -205,4 +305,14 @@ func envoyHeaderMatcher(ctx context.Context, in []*matchers.HeaderMatcher) []*en
 		out = append(out, envoyMatch)
 	}
 	return out
+}
+
+func convertRegex(regex *envoy_type_matcher.RegexMatcher) *v3.RegexMatcher {
+	if regex == nil {
+		return nil
+	}
+	return &v3.RegexMatcher{
+		EngineType: &v3.RegexMatcher_GoogleRe2{GoogleRe2: &v3.RegexMatcher_GoogleRE2{MaxProgramSize: convertUint32(regex.GetGoogleRe2().GetMaxProgramSize())}},
+		Regex:      regex.GetRegex(),
+	}
 }

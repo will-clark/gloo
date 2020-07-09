@@ -135,7 +135,7 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 "extauth": .enterprise.gloo.solo.io.ExtAuthExtension
 "dlp": .dlp.options.gloo.solo.io.Config
 "bufferPerRoute": .envoy.extensions.filters.http.buffer.v3.BufferPerRoute
-"earlyTransformations": .transformation.options.gloo.solo.io.EarlyTransformations
+"stagedTransformations": .transformation.options.gloo.solo.io.TransformationStages
 
 ```
 
@@ -155,7 +155,7 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 | `extauth` | [.enterprise.gloo.solo.io.ExtAuthExtension](../enterprise/options/extauth/v1/extauth.proto.sk/#extauthextension) | Enterprise-only: Authentication configuration. |  |
 | `dlp` | [.dlp.options.gloo.solo.io.Config](../enterprise/options/dlp/dlp.proto.sk/#config) | Enterprise-only: Config for data loss prevention. |  |
 | `bufferPerRoute` | [.envoy.extensions.filters.http.buffer.v3.BufferPerRoute](../../external/envoy/extensions/filters/http/buffer/v3/buffer.proto.sk/#bufferperroute) | BufferPerRoute can be used to set the maximum request size that the filter will buffer before the connection manager will stop buffering and return a 413 response. Note: If you have not set a global config (at the gateway level), this override will not do anything by itself. |  |
-| `earlyTransformations` | [.transformation.options.gloo.solo.io.EarlyTransformations](../options/transformation/transformation.proto.sk/#earlytransformations) | Early transformations stage. These transformations run before most other options are processed. |  |
+| `stagedTransformations` | [.transformation.options.gloo.solo.io.TransformationStages](../options/transformation/transformation.proto.sk/#transformationstages) | Early transformations stage. These transformations run before most other options are processed. |  |
 
 
 
@@ -192,7 +192,7 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 "extauth": .enterprise.gloo.solo.io.ExtAuthExtension
 "dlp": .dlp.options.gloo.solo.io.Config
 "bufferPerRoute": .envoy.extensions.filters.http.buffer.v3.BufferPerRoute
-"earlyTransformations": .transformation.options.gloo.solo.io.EarlyTransformations
+"stagedTransformations": .transformation.options.gloo.solo.io.TransformationStages
 
 ```
 
@@ -220,7 +220,7 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 | `extauth` | [.enterprise.gloo.solo.io.ExtAuthExtension](../enterprise/options/extauth/v1/extauth.proto.sk/#extauthextension) | Enterprise-only: Authentication configuration. |  |
 | `dlp` | [.dlp.options.gloo.solo.io.Config](../enterprise/options/dlp/dlp.proto.sk/#config) | Enterprise-only: Config for data loss prevention. |  |
 | `bufferPerRoute` | [.envoy.extensions.filters.http.buffer.v3.BufferPerRoute](../../external/envoy/extensions/filters/http/buffer/v3/buffer.proto.sk/#bufferperroute) | BufferPerRoute can be used to set the maximum request size that the filter will buffer before the connection manager will stop buffering and return a 413 response. Note: If you have not set a global config (at the gateway level), this override will not do anything by itself. |  |
-| `earlyTransformations` | [.transformation.options.gloo.solo.io.EarlyTransformations](../options/transformation/transformation.proto.sk/#earlytransformations) | Early transformations stage. These transformations run before most other options are processed. |  |
+| `stagedTransformations` | [.transformation.options.gloo.solo.io.TransformationStages](../options/transformation/transformation.proto.sk/#transformationstages) | Early transformations stage. These transformations run before most other options are processed. |  |
 
 
 
@@ -262,18 +262,18 @@ is selected for routing.
 "extensions": .gloo.solo.io.Extensions
 "extauth": .enterprise.gloo.solo.io.ExtAuthExtension
 "bufferPerRoute": .envoy.extensions.filters.http.buffer.v3.BufferPerRoute
-"earlyTransformations": .transformation.options.gloo.solo.io.EarlyTransformations
+"stagedTransformations": .transformation.options.gloo.solo.io.TransformationStages
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `headerManipulation` | [.headers.options.gloo.solo.io.HeaderManipulation](../options/headers/headers.proto.sk/#headermanipulation) | Append/Remove headers on Requests or Responses to/from this Weighted Destination. |  |
-| `transformations` | [.transformation.options.gloo.solo.io.Transformations](../options/transformation/transformation.proto.sk/#transformations) | Transformations to apply. |  |
+| `transformations` | [.transformation.options.gloo.solo.io.Transformations](../options/transformation/transformation.proto.sk/#transformations) | Transformations to apply. Note: this field is superceded by `staged_transformations`. If `staged_transformations.XXX` is set, this field will be ignored. |  |
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk/#extensions) | Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the underlying Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml. Some sample use cases: * controllers, deployment pipelines, helm charts, etc. which wish to use extensions as a kind of opaque metadata. * In the future, Gloo may support gRPC-based plugins which communicate with the Gloo translator out-of-process. Opaque Extensions enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API. |  |
 | `extauth` | [.enterprise.gloo.solo.io.ExtAuthExtension](../enterprise/options/extauth/v1/extauth.proto.sk/#extauthextension) | Enterprise-only: Authentication configuration. |  |
 | `bufferPerRoute` | [.envoy.extensions.filters.http.buffer.v3.BufferPerRoute](../../external/envoy/extensions/filters/http/buffer/v3/buffer.proto.sk/#bufferperroute) | BufferPerRoute can be used to set the maximum request size that the filter will buffer before the connection manager will stop buffering and return a 413 response. Note: If you have not set a global config (at the gateway level), this override will not do anything by itself. |  |
-| `earlyTransformations` | [.transformation.options.gloo.solo.io.EarlyTransformations](../options/transformation/transformation.proto.sk/#earlytransformations) | Early transformations stage. These transformations run before most other options are processed. |  |
+| `stagedTransformations` | [.transformation.options.gloo.solo.io.TransformationStages](../options/transformation/transformation.proto.sk/#transformationstages) | Early transformations stage. These transformations run before most other options are processed. If the XXX field is set in here, the `transformations` field is ignored. |  |
 
 
 

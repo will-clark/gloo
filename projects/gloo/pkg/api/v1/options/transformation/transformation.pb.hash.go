@@ -78,6 +78,69 @@ func (m *ResponseMatch) Hash(hasher hash.Hash64) (uint64, error) {
 }
 
 // Hash function
+func (m *RequestMatch) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation.RequestMatch")); err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetMatcher()).(safe_hasher.SafeHasher); ok {
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if val, err := hashstructure.Hash(m.GetMatcher(), nil); err != nil {
+			return 0, err
+		} else {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetClearRouteCache())
+	if err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetRequestTransformation()).(safe_hasher.SafeHasher); ok {
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if val, err := hashstructure.Hash(m.GetRequestTransformation(), nil); err != nil {
+			return 0, err
+		} else {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetResponseTransformation()).(safe_hasher.SafeHasher); ok {
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if val, err := hashstructure.Hash(m.GetResponseTransformation(), nil); err != nil {
+			return 0, err
+		} else {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
 func (m *Transformations) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
@@ -127,7 +190,7 @@ func (m *Transformations) Hash(hasher hash.Hash64) (uint64, error) {
 }
 
 // Hash function
-func (m *EarlyTransformations) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *RequestResponseTransformations) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -135,8 +198,26 @@ func (m *EarlyTransformations) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation.EarlyTransformations")); err != nil {
+	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation.RequestResponseTransformations")); err != nil {
 		return 0, err
+	}
+
+	for _, v := range m.GetRequestTransforms() {
+
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if val, err := hashstructure.Hash(v, nil); err != nil {
+				return 0, err
+			} else {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+					return 0, err
+				}
+			}
+		}
+
 	}
 
 	for _, v := range m.GetResponseTransforms() {
@@ -155,6 +236,50 @@ func (m *EarlyTransformations) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *TransformationStages) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("transformation.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation.TransformationStages")); err != nil {
+		return 0, err
+	}
+
+	if h, ok := interface{}(m.GetEarly()).(safe_hasher.SafeHasher); ok {
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if val, err := hashstructure.Hash(m.GetEarly(), nil); err != nil {
+			return 0, err
+		} else {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	if h, ok := interface{}(m.GetRegular()).(safe_hasher.SafeHasher); ok {
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if val, err := hashstructure.Hash(m.GetRegular(), nil); err != nil {
+			return 0, err
+		} else {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				return 0, err
+			}
+		}
 	}
 
 	return hasher.Sum64(), nil

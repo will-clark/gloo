@@ -506,12 +506,12 @@ func (m *VirtualHostOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetEarlyTransformations()).(safe_hasher.SafeHasher); ok {
+	if h, ok := interface{}(m.GetStagedTransformations()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if val, err := hashstructure.Hash(m.GetEarlyTransformations(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetStagedTransformations(), nil); err != nil {
 			return 0, err
 		} else {
 			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
@@ -820,12 +820,12 @@ func (m *RouteOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetEarlyTransformations()).(safe_hasher.SafeHasher); ok {
+	if h, ok := interface{}(m.GetStagedTransformations()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if val, err := hashstructure.Hash(m.GetEarlyTransformations(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetStagedTransformations(), nil); err != nil {
 			return 0, err
 		} else {
 			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
@@ -1030,12 +1030,12 @@ func (m *WeightedDestinationOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetEarlyTransformations()).(safe_hasher.SafeHasher); ok {
+	if h, ok := interface{}(m.GetStagedTransformations()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if val, err := hashstructure.Hash(m.GetEarlyTransformations(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetStagedTransformations(), nil); err != nil {
 			return 0, err
 		} else {
 			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
