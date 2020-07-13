@@ -167,8 +167,10 @@ func getTransformations(ctx context.Context, stage uint32, transformations *tran
 			Stage: EarlyStageNumber,
 			Match: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_{
 				RequestMatch: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch{
-					Match:                 getRequestMatcher(ctx, transformation.GetMatcher()),
-					RequestTransformation: transformation.RequestTransformation,
+					Match:                  getRequestMatcher(ctx, transformation.GetMatcher()),
+					RequestTransformation:  transformation.RequestTransformation,
+					ClearRouteCache:        transformation.ClearRouteCache,
+					ResponseTransformation: transformation.ResponseTransformation,
 				},
 			},
 		})
@@ -198,6 +200,9 @@ func getResponseMatcher(ctx context.Context, m *transformation.ResponseMatch) *e
 }
 
 func getRequestMatcher(ctx context.Context, matcher *matchers.Matcher) *envoyroutev3.RouteMatch {
+	if matcher == nil {
+		return nil
+	}
 	match := &envoyroutev3.RouteMatch{
 		Headers:         envoyHeaderMatcher(ctx, matcher.GetHeaders()),
 		QueryParameters: envoyQueryMatcher(ctx, matcher.GetQueryParameters()),
