@@ -132,7 +132,7 @@ var _ = Describe("Staged Transformation", func() {
 		TestUpstreamReachable := func() {
 			v1helpers.TestUpstreamReachable(envoyPort, tu, nil)
 		}
-		It("should should transform response", func() {
+		It("should transform response", func() {
 			setProxy(&transformation.TransformationStages{
 				Early: &transformation.RequestResponseTransformations{
 					ResponseTransforms: []*transformation.ResponseMatch{{
@@ -187,11 +187,11 @@ var _ = Describe("Staged Transformation", func() {
 			v1helpers.ExpectHttpOK(body, nil, envoyPort, "early-transformed")
 		})
 
-		It("should should not transform without ext auth failing", func() {
+		It("should not transform without ext auth failing", func() {
 			setProxy(&transformation.TransformationStages{
 				Early: &transformation.RequestResponseTransformations{
 					ResponseTransforms: []*transformation.ResponseMatch{{
-						ResponseCodeDetails: "ext_authz_denied",
+						ResponseCodeDetails: "ext_authz_error",
 						ResponseTransformation: &envoytransformation.Transformation{
 							TransformationType: &envoytransformation.Transformation_TransformationTemplate{
 								TransformationTemplate: &envoytransformation.TransformationTemplate{
@@ -223,7 +223,7 @@ var _ = Describe("Staged Transformation", func() {
 			}, "30s", "1s").ShouldNot(HaveOccurred())
 		}
 
-		It("should should transform ext auth", func() {
+		It("should transform response code details", func() {
 			setProxyWithModifier(&transformation.TransformationStages{
 				Early: &transformation.RequestResponseTransformations{
 					ResponseTransforms: []*transformation.ResponseMatch{{
