@@ -2,8 +2,7 @@ package transformation_test
 
 import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	"github.com/envoyproxy/go-control-plane/pkg/conversion"
-	structpb "github.com/golang/protobuf/ptypes/struct"
+	"github.com/golang/protobuf/ptypes/any"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	envoytransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
@@ -11,21 +10,19 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
 var _ = Describe("Plugin", func() {
 	var (
 		p        *Plugin
 		t        *transformation.Transformations
-		expected *structpb.Struct
+		expected *any.Any
 	)
 
 	BeforeEach(func() {
 		p = NewPlugin()
 		t = &transformation.Transformations{
-			ClearRouteCache: true,
-		}
-		e := &envoytransformation.RouteTransformations{
 			ClearRouteCache: true,
 			Transformations: []*envoytransformation.RouteTransformations_RouteTransformation{
 				{
@@ -37,7 +34,7 @@ var _ = Describe("Plugin", func() {
 				},
 			},
 		}
-		configStruct, err := conversion.MessageToStruct(e)
+		configStruct, err := utils.MessageToAny(t)
 		Expect(err).NotTo(HaveOccurred())
 
 		expected = configStruct
@@ -51,7 +48,7 @@ var _ = Describe("Plugin", func() {
 			},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out.PerFilterConfig).To(HaveKeyWithValue(FilterName, expected))
+		Expect(out.TypedPerFilterConfig).To(HaveKeyWithValue(FilterName, expected))
 	})
 	It("sets transformation config for virtual hosts", func() {
 		out := &envoyroute.VirtualHost{}
@@ -61,7 +58,7 @@ var _ = Describe("Plugin", func() {
 			},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out.PerFilterConfig).To(HaveKeyWithValue(FilterName, expected))
+		Expect(out.TypedPerFilterConfig).To(HaveKeyWithValue(FilterName, expected))
 	})
 	It("sets transformation config for routes", func() {
 		out := &envoyroute.Route{}
@@ -71,7 +68,7 @@ var _ = Describe("Plugin", func() {
 			},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out.PerFilterConfig).To(HaveKeyWithValue(FilterName, expected))
+		Expect(out.TypedPerFilterConfig).To(HaveKeyWithValue(FilterName, expected))
 	})
 	It("sets filters correctly when early filters exist", func() {
 		out := &envoyroute.Route{}

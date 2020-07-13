@@ -135,6 +135,8 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 "extauth": .enterprise.gloo.solo.io.ExtAuthExtension
 "dlp": .dlp.options.gloo.solo.io.Config
 "bufferPerRoute": .envoy.extensions.filters.http.buffer.v3.BufferPerRoute
+"includeRequestAttemptCount": .google.protobuf.BoolValue
+"includeAttemptCountInResponse": .google.protobuf.BoolValue
 "stagedTransformations": .transformation.options.gloo.solo.io.TransformationStages
 
 ```
@@ -155,6 +157,8 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 | `extauth` | [.enterprise.gloo.solo.io.ExtAuthExtension](../enterprise/options/extauth/v1/extauth.proto.sk/#extauthextension) | Enterprise-only: Authentication configuration. |  |
 | `dlp` | [.dlp.options.gloo.solo.io.Config](../enterprise/options/dlp/dlp.proto.sk/#config) | Enterprise-only: Config for data loss prevention. |  |
 | `bufferPerRoute` | [.envoy.extensions.filters.http.buffer.v3.BufferPerRoute](../../external/envoy/extensions/filters/http/buffer/v3/buffer.proto.sk/#bufferperroute) | BufferPerRoute can be used to set the maximum request size that the filter will buffer before the connection manager will stop buffering and return a 413 response. Note: If you have not set a global config (at the gateway level), this override will not do anything by itself. |  |
+| `includeRequestAttemptCount` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | IncludeRequestAttemptCount decides whether the x-envoy-attempt-count header should be included in the upstream request. Setting this option will cause it to override any existing header value, so in the case of two Envoys on the request path with this option enabled, the upstream will see the attempt count as perceived by the second Envoy. Defaults to false. |  |
+| `includeAttemptCountInResponse` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | IncludeAttemptCountInResponse decides whether the x-envoy-attempt-count header should be included in the downstream response. Setting this option will cause the router to override any existing header value, so in the case of two Envoys on the request path with this option enabled, the downstream will see the attempt count as perceived by the Envoy closest upstream from itself. Defaults to false. |  |
 | `stagedTransformations` | [.transformation.options.gloo.solo.io.TransformationStages](../options/transformation/transformation.proto.sk/#transformationstages) | Early transformations stage. These transformations run before most other options are processed. |  |
 
 
@@ -269,11 +273,11 @@ is selected for routing.
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `headerManipulation` | [.headers.options.gloo.solo.io.HeaderManipulation](../options/headers/headers.proto.sk/#headermanipulation) | Append/Remove headers on Requests or Responses to/from this Weighted Destination. |  |
-| `transformations` | [.transformation.options.gloo.solo.io.Transformations](../options/transformation/transformation.proto.sk/#transformations) | Transformations to apply. Note: this field is superceded by `staged_transformations`. If `staged_transformations.XXX` is set, this field will be ignored. |  |
+| `transformations` | [.transformation.options.gloo.solo.io.Transformations](../options/transformation/transformation.proto.sk/#transformations) | Transformations to apply. Note: this field is superceded by `staged_transformations`. If `staged_transformations.regular` is set, this field will be ignored. |  |
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk/#extensions) | Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the underlying Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml. Some sample use cases: * controllers, deployment pipelines, helm charts, etc. which wish to use extensions as a kind of opaque metadata. * In the future, Gloo may support gRPC-based plugins which communicate with the Gloo translator out-of-process. Opaque Extensions enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API. |  |
 | `extauth` | [.enterprise.gloo.solo.io.ExtAuthExtension](../enterprise/options/extauth/v1/extauth.proto.sk/#extauthextension) | Enterprise-only: Authentication configuration. |  |
 | `bufferPerRoute` | [.envoy.extensions.filters.http.buffer.v3.BufferPerRoute](../../external/envoy/extensions/filters/http/buffer/v3/buffer.proto.sk/#bufferperroute) | BufferPerRoute can be used to set the maximum request size that the filter will buffer before the connection manager will stop buffering and return a 413 response. Note: If you have not set a global config (at the gateway level), this override will not do anything by itself. |  |
-| `stagedTransformations` | [.transformation.options.gloo.solo.io.TransformationStages](../options/transformation/transformation.proto.sk/#transformationstages) | Early transformations stage. These transformations run before most other options are processed. If the XXX field is set in here, the `transformations` field is ignored. |  |
+| `stagedTransformations` | [.transformation.options.gloo.solo.io.TransformationStages](../options/transformation/transformation.proto.sk/#transformationstages) | Early transformations stage. These transformations run before most other options are processed. If the `regular` field is set in here, the `transformations` field is ignored. |  |
 
 
 

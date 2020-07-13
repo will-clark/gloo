@@ -6,10 +6,10 @@ import (
 
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoyauth "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/ext_authz/v2"
-	envoytype "github.com/envoyproxy/go-control-plane/envoy/type"
-	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
+	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -30,10 +30,14 @@ var (
 	}
 )
 
-func BuildHttpFilters(settings *extauthv1.Settings, upstreams v1.UpstreamList) ([]plugins.StagedHttpFilter, error) {
+func BuildHttpFilters(globalSettings *extauthv1.Settings, listener *v1.HttpListener, upstreams v1.UpstreamList) ([]plugins.StagedHttpFilter, error) {
 	var filters []plugins.StagedHttpFilter
 
 	// If no extauth settings are provided, don't configure the ext_authz filter
+	settings := listener.GetOptions().GetExtauth()
+	if settings == nil {
+		settings = globalSettings
+	}
 	if settings == nil {
 		return filters, nil
 	}
