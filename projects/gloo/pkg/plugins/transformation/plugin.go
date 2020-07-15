@@ -164,7 +164,7 @@ func getTransformations(ctx context.Context, stage uint32, transformations *tran
 
 	for _, transformation := range transformations.GetRequestTransforms() {
 		outTransformations = append(outTransformations, &envoytransformation.RouteTransformations_RouteTransformation{
-			Stage: EarlyStageNumber,
+			Stage: stage,
 			Match: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch_{
 				RequestMatch: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch{
 					Match:                  getRequestMatcher(ctx, transformation.GetMatcher()),
