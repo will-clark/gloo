@@ -79,6 +79,9 @@ gatewayProxies:
   gatewayProxy:
     service:
       type: NodePort
+    failover:
+      enabled: true
+      nodePort: 32000
 EOF
 glooctl install gateway --values nodeport.yaml
 rm nodeport.yaml
@@ -96,53 +99,7 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
    -keyout mtls.key -out mtls.crt -subj "/CN=solo.io"
 
-# TODO(awang) when #3339 goes in, use helm values to achieve this
 glooctl create secret tls --name failover-downstream --certchain tls.crt --privatekey tls.key --rootca mtls.crt
-
-# Apply failover gateway and service
-kubectl apply -f - <<EOF
-apiVersion: gateway.solo.io/v1
-kind: Gateway
-metadata:
-  name: failover-gateway
-  namespace: gloo-system
-  labels:
-    app: gloo
-spec:
-  bindAddress: "::"
-  bindPort: 15443
-  tcpGateway:
-    tcpHosts:
-    - name: failover
-      sslConfig:
-        secretRef:
-          name: failover-downstream
-          namespace: gloo-system
-      destination:
-        forwardSniClusterName: {}
----
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app: gloo
-    gateway-proxy-id: gateway-proxy
-    gloo: gateway-proxy
-  name: failover
-  namespace: gloo-system
-spec:
-  ports:
-  - name: failover
-    nodePort: 32000
-    port: 15443
-    protocol: TCP
-    targetPort: 15443
-  selector:
-    gateway-proxy: live
-    gateway-proxy-id: gateway-proxy
-  sessionAffinity: None
-  type: NodePort
-EOF
 
 # Revert back to cluster context $1
 kubectl config use-context kind-"$1"
@@ -169,6 +126,7 @@ gloo:
       service:
         type: NodePort
 EOF
+
 glooctl install gateway enterprise --values basic-enterprise.yaml
 rm basic-enterprise.yaml
 kubectl -n gloo-system rollout status deployment gloo --timeout=2m
@@ -578,10 +536,7 @@ curl -X POST  localhost:19000/healthcheck/fail
 # See that the green pod is now being reached, with the curl command returning "green-pod".
 kubectl port-forward -n gloo-system svc/gateway-proxy 8080:80
 curl localhost:8080/
-EOF
 
-# Instructions for cleanup
-cat << EOF
 
 # To clean up the demo, run:
 kind delete cluster --name "$1"
