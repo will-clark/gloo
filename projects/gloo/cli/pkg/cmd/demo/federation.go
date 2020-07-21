@@ -3,6 +3,8 @@ package demo
 import (
 	"os"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
+
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -21,10 +23,16 @@ func federation(opts *options.Options) *cobra.Command {
 			if err != nil {
 				return eris.Wrapf(err, "demo Gloo Federation")
 			}
+			licenseKey := opts.Install.Federation.LicenseKey
+			if licenseKey == "" {
+				return eris.New("please pass in a Gloo Federation license key (e.g. glooctl federation demo --license-key [license key])")
+			}
 			runner := common.NewShellRunner(os.Stdin, os.Stdout)
-			return runner.Run("bash", "-c", initGlooFedDemoScript, "init-demo.sh", "local", "remote", latestFederationVersion)
+			return runner.Run("bash", "-c", initGlooFedDemoScript, "init-demo.sh", "local", "remote", latestFederationVersion, licenseKey)
 		},
 	}
+	pflags := cmd.PersistentFlags()
+	flagutils.AddFederationDemoFlags(pflags, &opts.Install.Federation)
 	return cmd
 }
 
@@ -39,6 +47,11 @@ fi
 
 controlPlaneVersion=$3
 if [ "$3" == "" ]; then
+  exit 0
+fi
+
+if [ "$4" == "" ]; then
+  echo "please provide a license key"
   exit 0
 fi
 
@@ -69,7 +82,7 @@ EOF
 kubectl config use-context kind-"$1"
 
 # Install gloo-fed to cluster $1
-glooctl install federation
+glooctl install federation --license-key=$4
 kubectl -n gloo-fed rollout status deployment gloo-fed --timeout=1m
 
 # Install gloo to cluster $2
@@ -557,13 +570,13 @@ cat << EOF
 # We now have failover set up correctly!
 
 # To view the federated upstreams, run:
-kubectl get federatedupstream -n gloo-fed
+kubectl get federatedupstream -n gloo-fed -oyaml
 
 # To view the federated virtual services, run:
-kubectl get federatedvirtualservices -n gloo-fed
+kubectl get federatedvirtualservices -n gloo-fed -oyaml
 
 # To view the failover schemes, run:
-kubectl get failoverschemes -n gloo-fed
+kubectl get failoverschemes -n gloo-fed -oyaml
 
 # For this section, use two terminals, one for the port-forward command and one for the curl command.
 

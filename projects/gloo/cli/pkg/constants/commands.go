@@ -98,8 +98,8 @@ var (
 	DEMO_FEDERATION_COMMAND = cobra.Command{
 		Use:   "federation",
 		Short: "Bootstrap a multicluster demo with Gloo Federation.",
-		Long: "Running the Gloo Federation demo setup locally requires 4 tools to be installed, and accessible via the " +
-			"PATH. meshctl, kubectl, docker, and kind. This command will bootstrap 2 clusters, one of which will run " +
+		Long: "Running the Gloo Federation demo setup locally requires 3 tools to be installed, and accessible via the " +
+			"PATH: kubectl, docker, and kind. This command will bootstrap 2 kind clusters, one of which will run " +
 			"the Gloo Federation management-plane as well as Gloo Enterprise, and the other will just run Gloo.",
 	}
 
