@@ -4,11 +4,11 @@ weight: 5
 ---
 ## glooctl demo
 
-Demos (requires Gloo running on Kubernetes)
+Demos (requires 4 tools to be installed and accessible via the PATH: glooctl, kubectl, docker, and kind.)
 
 ### Synopsis
 
-Demos (requires Gloo running on Kubernetes)
+Demos (requires 4 tools to be installed and accessible via the PATH: glooctl, kubectl, docker, and kind.)
 
 ```
 glooctl demo [flags]

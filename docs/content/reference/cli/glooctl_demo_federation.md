@@ -8,7 +8,7 @@ Bootstrap a multicluster demo with Gloo Federation.
 
 ### Synopsis
 
-Running the Gloo Federation demo setup locally requires 4 tools to be installed, and accessible via the PATH. meshctl, kubectl, docker, and kind. This command will bootstrap 2 clusters, one of which will run the Gloo Federation management-plane as well as Gloo Enterprise, and the other will just run Gloo.
+Running the Gloo Federation demo setup locally requires 4 tools to be installed and accessible via the PATH: glooctl, kubectl, docker, and kind. This command will bootstrap 2 kind clusters, one of which will run the Gloo Federation management-plane as well as Gloo Enterprise, and the other will just run Gloo.
 
 ```
 glooctl demo federation [flags]
@@ -17,7 +17,8 @@ glooctl demo federation [flags]
 ### Options
 
 ```
-  -h, --help   help for federation
+  -h, --help                 help for federation
+      --license-key string   License key to activate Gloo Fed features
 ```
 
 ### Options inherited from parent commands
@@ -36,5 +37,5 @@ glooctl demo federation [flags]
 
 ### SEE ALSO
 
-* [glooctl demo](../glooctl_demo)	 - Demos (requires Gloo running on Kubernetes)
+* [glooctl demo](../glooctl_demo)	 - Demos (requires 4 tools to be installed and accessible via the PATH: glooctl, kubectl, docker, and kind.)
 
