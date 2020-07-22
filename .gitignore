@@ -14,12 +14,6 @@ install/gloo.yaml
 
 cloudbuild-local*.yaml
 
-# generated certs
-mtls.crt
-mtls.key
-tls.crt
-tls.key
-
 # OSX files
 .DS_Store
 docs/helm-values.md
