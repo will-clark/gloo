@@ -3,13 +3,12 @@ package demo
 import (
 	"os"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
-
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/spf13/cobra"
 )
 
@@ -19,16 +18,16 @@ func federation(opts *options.Options) *cobra.Command {
 		Short: constants.DEMO_FEDERATION_COMMAND.Short,
 		Long:  constants.DEMO_FEDERATION_COMMAND.Long,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			latestFederationVersion, err := version.GetLatestGlooFedVersion(true)
-			if err != nil {
-				return eris.Wrapf(err, "demo Gloo Federation")
-			}
 			licenseKey := opts.Install.Federation.LicenseKey
 			if licenseKey == "" {
 				return eris.New("please pass in a Gloo Federation license key (e.g. glooctl federation demo --license-key [license key])")
 			}
+			latestGlooEEVersion, err := version.GetLatestEnterpriseVersion(false)
+			if err != nil {
+				return eris.Wrapf(err, "Couldn't find latest Gloo Enterprise Version")
+			}
 			runner := common.NewShellRunner(os.Stdin, os.Stdout)
-			return runner.Run("bash", "-c", initGlooFedDemoScript, "init-demo.sh", "local", "remote", latestFederationVersion, licenseKey)
+			return runner.Run("bash", "-c", initGlooFedDemoScript, "init-demo.sh", "local", "remote", latestGlooEEVersion, licenseKey)
 		},
 	}
 	pflags := cmd.PersistentFlags()
@@ -42,20 +41,13 @@ const (
 
 if [ "$1" == "" ] || [ "$2" == "" ]; then
   echo "please provide a name for both the control plane and remote clusters"
-  exit 0
-fi
-
-controlPlaneVersion=$3
-if [ "$3" == "" ]; then
-  exit 0
+  exit 1
 fi
 
 if [ "$4" == "" ]; then
   echo "please provide a license key"
-  exit 0
+  exit 1
 fi
-
-printf "control plane components will be installed with version %s\n" "$controlPlaneVersion"
 
 kind create cluster --name "$1"
 
@@ -83,7 +75,7 @@ kubectl config use-context kind-"$1"
 
 # Install gloo-fed to cluster $1
 glooctl install federation --license-key=$4
-kubectl -n gloo-fed rollout status deployment gloo-fed --timeout=1m
+kubectl -n gloo-fed rollout status deployment gloo-fed --timeout=1m || true
 
 # Install gloo to cluster $2
 kubectl config use-context kind-"$2"
@@ -95,10 +87,10 @@ gatewayProxies:
 EOF
 glooctl install gateway --values nodeport.yaml
 rm nodeport.yaml
-kubectl -n gloo-system rollout status deployment gloo --timeout=2m
-kubectl -n gloo-system rollout status deployment discovery --timeout=2m
-kubectl -n gloo-system rollout status deployment gateway-proxy --timeout=2m
-kubectl -n gloo-system rollout status deployment gateway --timeout=2m
+kubectl -n gloo-system rollout status deployment gloo --timeout=2m || true
+kubectl -n gloo-system rollout status deployment discovery --timeout=2m || true
+kubectl -n gloo-system rollout status deployment gateway-proxy --timeout=2m || true
+kubectl -n gloo-system rollout status deployment gateway --timeout=2m || true
 kubectl patch settings -n gloo-system default --type=merge -p '{"spec":{"watchNamespaces":["gloo-system", "default"]}}'
 
 # Generate downstream cert and key
@@ -182,12 +174,12 @@ gloo:
       service:
         type: NodePort
 EOF
-glooctl install gateway enterprise --values basic-enterprise.yaml
+glooctl install gateway enterprise --version $3 --values basic-enterprise.yaml --license-key=$4
 rm basic-enterprise.yaml
-kubectl -n gloo-system rollout status deployment gloo --timeout=2m
-kubectl -n gloo-system rollout status deployment discovery --timeout=2m
-kubectl -n gloo-system rollout status deployment gateway-proxy --timeout=2m
-kubectl -n gloo-system rollout status deployment gateway --timeout=2m
+kubectl -n gloo-system rollout status deployment gloo --timeout=2m || true
+kubectl -n gloo-system rollout status deployment discovery --timeout=2m || true
+kubectl -n gloo-system rollout status deployment gateway-proxy --timeout=2m || true
+kubectl -n gloo-system rollout status deployment gateway --timeout=2m || true
 
 glooctl create secret tls --name failover-upstream --certchain mtls.crt --privatekey mtls.key
 rm mtls.key mtls.crt tls.crt tls.key
@@ -577,6 +569,8 @@ kubectl get federatedvirtualservices -n gloo-fed -oyaml
 
 # To view the failover schemes, run:
 kubectl get failoverschemes -n gloo-fed -oyaml
+
+# Wait for the Failover Scheme to be ACCEPTED
 
 # For this section, use two terminals, one for the port-forward command and one for the curl command.
 
