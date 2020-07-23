@@ -22,16 +22,20 @@ func federation(opts *options.Options) *cobra.Command {
 			if licenseKey == "" {
 				return eris.New("please pass in a Gloo Federation license key (e.g. glooctl federation demo --license-key [license key])")
 			}
+			overrideFile := opts.Install.Federation.HelmChartOverride
 			latestGlooEEVersion, err := version.GetLatestEnterpriseVersion(false)
 			if err != nil {
 				return eris.Wrapf(err, "Couldn't find latest Gloo Enterprise Version")
 			}
 			runner := common.NewShellRunner(os.Stdin, os.Stdout)
-			return runner.Run("bash", "-c", initGlooFedDemoScript, "init-demo.sh", "local", "remote", latestGlooEEVersion, licenseKey)
+			return runner.Run("bash", "-c", initGlooFedDemoScript, "init-demo.sh", "local", "remote",
+				latestGlooEEVersion, licenseKey, overrideFile)
 		},
 	}
 	pflags := cmd.PersistentFlags()
 	flagutils.AddFederationDemoFlags(pflags, &opts.Install.Federation)
+	// this flag is only used for testing, and debugging purposes
+	pflags.Lookup("file").Hidden = true
 	return cmd
 }
 
@@ -74,7 +78,11 @@ EOF
 kubectl config use-context kind-"$1"
 
 # Install gloo-fed to cluster $1
-glooctl install federation --license-key=$4
+if [ "$5" == "" ]; then
+  glooctl install federation --license-key=$4
+else
+  glooctl install federation --license-key=$4 --file $5
+fi
 kubectl -n gloo-fed rollout status deployment gloo-fed --timeout=1m || true
 
 # Install gloo to cluster $2
