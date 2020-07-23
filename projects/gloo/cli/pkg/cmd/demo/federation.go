@@ -42,6 +42,7 @@ func federation(opts *options.Options) *cobra.Command {
 const (
 	initGlooFedDemoScript = `
 #!/bin/bash
+trap "rm -f mtls.crt mtls.key tls.crt tls.key" EXIT
 
 if [ "$1" == "" ] || [ "$2" == "" ]; then
   echo "please provide a name for both the control plane and remote clusters"
@@ -190,7 +191,6 @@ kubectl -n gloo-system rollout status deployment gateway-proxy --timeout=2m || t
 kubectl -n gloo-system rollout status deployment gateway --timeout=2m || true
 
 glooctl create secret tls --name failover-upstream --certchain mtls.crt --privatekey mtls.key
-rm mtls.key mtls.crt tls.crt tls.key
 
 case $(uname) in
   "Darwin")
