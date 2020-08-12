@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"time"
 
 	"github.com/rotisserie/eris"
@@ -68,6 +69,15 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	flagutils.AddExcludecheckFlag(pflags, &opts.Top.CheckName)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
+}
+
+func CheckMulticlusterResources(opts *options.Options) {
+	output, err := exec.Command("glooctl", "fed", "check").Output()
+	if err != nil {
+		return
+	}
+	fmt.Printf("\nDetected Gloo Fed!\n\n")
+	fmt.Printf("%v", string(output))
 }
 
 func CheckResources(opts *options.Options) (bool, error) {
