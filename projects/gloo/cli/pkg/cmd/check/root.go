@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/rotisserie/eris"
@@ -72,11 +73,16 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 }
 
 func CheckMulticlusterResources(opts *options.Options) {
-	output, err := exec.Command("glooctl", "fed", "check").Output()
+	_, err := exec.Command("which", "glooctl-fed").Output()
 	if err != nil {
+		// The glooctl-fed plugin isn't installed in the user's PATH
 		return
 	}
-	fmt.Printf("\nDetected Gloo Fed!\n\n")
+	fmt.Printf("\nDetected Glooctl Fed plugin!\n\n")
+	output, err := exec.Command("glooctl", "fed", "check").Output()
+	if err != nil {
+		fmt.Printf("%s", strings.Replace(err.Error(), "exit status 1", "", -1))
+	}
 	fmt.Printf("%v", string(output))
 }
 
