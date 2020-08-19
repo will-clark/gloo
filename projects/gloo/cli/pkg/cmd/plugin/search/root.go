@@ -23,14 +23,20 @@ func RootCmd(opts *options.Options) *cobra.Command {
 		Use:   constants.PLUGIN_SEARCH_COMMAND.Use,
 		Short: constants.PLUGIN_SEARCH_COMMAND.Short,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return listAll()
+
+			var searchTerm string
+			if len(args) > 0 {
+				searchTerm = args[0]
+			}
+
+			return listAll(searchTerm)
 		},
 	}
 	flagutils.AddClusterFlags(cmd.PersistentFlags(), &opts.Cluster)
 	return cmd
 }
 
-func listAll() error {
+func listAll(searchTerm string) error {
 	bucketObjects, err := listAllBucketObjects()
 	if err != nil {
 		return err
@@ -49,6 +55,10 @@ func listAll() error {
 
 	var pluginList []string
 	for plugin := range uniquePlugins {
+		if !strings.Contains(plugin, searchTerm) {
+			continue
+		}
+
 		pluginList = append(pluginList, plugin)
 	}
 
