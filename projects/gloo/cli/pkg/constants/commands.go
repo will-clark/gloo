@@ -210,6 +210,11 @@ var (
 
 	PLUGIN_LIST_COMMAND = cobra.Command{
 		Use:   "list",
-		Short: "List available glooctl plugins",
+		Short: "List installed glooctl plugins",
+	}
+
+	PLUGIN_SEARCH_COMMAND = cobra.Command{
+		Use:   "search",
+		Short: "Search available glooctl plugins",
 	}
 )

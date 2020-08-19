@@ -3,6 +3,7 @@ module github.com/solo-io/gloo
 go 1.14
 
 require (
+	cloud.google.com/go/storage v1.0.0
 	github.com/Masterminds/semver/v3 v3.0.3
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b
 	github.com/avast/retry-go v2.4.3+incompatible
@@ -72,6 +73,7 @@ require (
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	golang.org/x/tools v0.0.0-20200522201501-cb1345f3a375
+	google.golang.org/api v0.13.0
 	google.golang.org/genproto v0.0.0-20191216164720-4f79533eabd1
 	google.golang.org/grpc v1.28.1
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7

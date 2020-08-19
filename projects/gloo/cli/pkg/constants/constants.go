@@ -9,6 +9,8 @@ const (
 	// This annotation is present on resources that are included in the chart only to clean up hooks.
 	// We use it to filter out those resources wherever that it necessary.
 	HookCleanupResourceAnnotation = "solo.io/hook-cleanup"
+	// The name of the Google Cloud Storage bucket where offiical glooctl plugins are published.
+	GlooctlPluginBucket = "glooctl-plugins"
 )
 
 var (
