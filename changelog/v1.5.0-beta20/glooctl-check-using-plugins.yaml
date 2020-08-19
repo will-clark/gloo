@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Implement `glooctl check` and do a multicluster check only if the glooctl-fed glooctl plugin
+      is on the user's PATH.
