@@ -29,6 +29,7 @@ type Options struct {
 	Add       Add
 	Remove    Remove
 	Cluster   Cluster
+	Plugin    Plugin
 }
 
 type Top struct {
@@ -429,4 +430,14 @@ type Register struct {
 
 type Unregister struct {
 	ClusterName string
+}
+
+type Plugin struct {
+	Install PluginInstall
+}
+
+type PluginInstall struct {
+	Name         string
+	ReleaseTag   string
+	DownloadPath string
 }

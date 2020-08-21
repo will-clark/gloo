@@ -215,6 +215,11 @@ var (
 
 	PLUGIN_SEARCH_COMMAND = cobra.Command{
 		Use:   "search",
-		Short: "Search available glooctl plugins",
+		Short: "Search glooctl plugins available on the official Solo.io plugin registry",
+	}
+
+	PLUGIN_INSTALL_COMMAND = cobra.Command{
+		Use:   "install",
+		Short: "Install a glooctl plugin from the official Solo.io plugin registry",
 	}
 )
