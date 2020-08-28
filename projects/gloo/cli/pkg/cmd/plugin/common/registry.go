@@ -17,7 +17,10 @@ type VersionedPlugins map[string]map[string]string
 
 // RegistryPlugin is a plugin made available via plugin registry.
 type RegistryPlugin struct {
-	Name              string
+	// Name is the name of the plugin, e.g. "glooctl-fed"
+	Name string
+	// Name is the user-friendly name of the plugin, e.g. "fed"
+	DisplayName       string
 	AvailableVersions VersionedPlugins
 }
 
@@ -64,8 +67,7 @@ func (r *GcsRegsitry) Search(ctx context.Context, query string) ([]RegistryPlugi
 			continue
 		}
 
-		prefixedName, version, binaryName := parts[0], parts[1], parts[2]
-		pluginName := strings.TrimPrefix(prefixedName, r.PluginPrefix)
+		pluginName, version, binaryName := parts[0], parts[1], parts[2]
 
 		if !strings.Contains(pluginName, query) {
 			continue
@@ -83,6 +85,7 @@ func (r *GcsRegsitry) Search(ctx context.Context, query string) ([]RegistryPlugi
 	for pluginName, versionedPlugins := range foundPlugins {
 		plugins = append(plugins, RegistryPlugin{
 			Name:              pluginName,
+			DisplayName:       strings.TrimPrefix(pluginName, r.PluginPrefix),
 			AvailableVersions: versionedPlugins,
 		})
 	}
