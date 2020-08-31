@@ -577,3 +577,4 @@
 |global.glooMtls.envoy.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
 |global.glooMtls.envoy.image.pullPolicy|string||image pull policy for the container|
 |global.glooMtls.envoy.image.pullSecret|string||image pull policy for the container |
+|global.istioSDS.enabled|bool|false||

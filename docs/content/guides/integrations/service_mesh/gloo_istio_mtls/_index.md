@@ -331,8 +331,8 @@ spec:
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
-      - name: cert-rotator
-        image: quay.io/solo-io/sds:1.5.0-beta23
+      - name: sds
+        image: quay.io/solo-io/sds:1.5.0-beta20
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8234
