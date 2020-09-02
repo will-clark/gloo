@@ -51,7 +51,7 @@ type UpstreamSpec struct {
 	ConnectEnabled bool `protobuf:"varint,4,opt,name=connect_enabled,json=connectEnabled,proto3" json:"connect_enabled,omitempty"`
 	// The data centers in which the service instance represented by this upstream is registered.
 	DataCenters []string `protobuf:"bytes,5,rep,name=data_centers,json=dataCenters,proto3" json:"data_centers,omitempty"`
-	// Whether or not to use HTTP (false, default) or HTTPS (true) when communicating with this consul upstream
+	// Whether or not to use HTTP (false, default) or HTTPS (true) when communicating with this consul upstream.
 	// If this configuration includes an SSL config, HTTPS is always used and this value is ignored.
 	UseTls               bool     `protobuf:"varint,8,opt,name=use_tls,json=useTls,proto3" json:"use_tls,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`

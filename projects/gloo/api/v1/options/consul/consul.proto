@@ -42,7 +42,7 @@ message UpstreamSpec {
     // The data centers in which the service instance represented by this upstream is registered.
     repeated string data_centers = 5;
 
-    // Whether or not to use HTTP (false, default) or HTTPS (true) when communicating with this consul upstream
+    // Whether or not to use HTTP (false, default) or HTTPS (true) when communicating with this consul upstream.
     // If this configuration includes an SSL config, HTTPS is always used and this value is ignored.
-    bool  use_tls = 8;
+    bool use_tls = 8;
 }
