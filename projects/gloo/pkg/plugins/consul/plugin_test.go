@@ -4,6 +4,8 @@ import (
 	"net"
 	"net/url"
 
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+
 	mock_consul2 "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul/mocks"
 
 	"github.com/golang/mock/gomock"
@@ -118,5 +120,32 @@ var _ = Describe("Resolve", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(u).To(Equal(&url.URL{Scheme: "http", Host: "5.6.7.8:1234"}))
+	})
+
+	It("reacts to the useTLS flag by expecting https upstreams", func() {
+
+		plug := NewPlugin(consulWatcherMock, nil, nil)
+
+		svcName := "my-svc"
+		dc := "dc1"
+
+		us := createTestFilteredUpstream(svcName, svcName, nil, nil, []string{dc})
+		consulSpec, _ := us.UpstreamType.(*v1.Upstream_Consul)
+		spec := consulSpec.Consul
+		spec.UseTls = true
+
+		queryOpts := &consulapi.QueryOptions{Datacenter: dc, RequireConsistent: true}
+
+		consulWatcherMock.EXPECT().Service(svcName, "", queryOpts).Return([]*consulapi.CatalogService{
+			{
+				ServiceAddress: "5.6.7.8",
+				ServicePort:    1234,
+			},
+		}, nil, nil)
+
+		u, err := plug.Resolve(us)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(u).To(Equal(&url.URL{Scheme: "https", Host: "5.6.7.8:1234"}))
 	})
 })

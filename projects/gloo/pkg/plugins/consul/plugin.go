@@ -52,7 +52,7 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 	}
 
 	scheme := "http"
-	if u.SslConfig != nil {
+	if u.SslConfig != nil || spec.UseTls {
 		scheme = "https"
 	}
 

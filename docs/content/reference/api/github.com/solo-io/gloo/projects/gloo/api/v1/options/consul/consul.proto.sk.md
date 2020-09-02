@@ -40,6 +40,7 @@ consul Upstreams are typically generated automatically by Gloo from the consul A
 "serviceSpec": .options.gloo.solo.io.ServiceSpec
 "connectEnabled": bool
 "dataCenters": []string
+"useTls": bool
 
 ```
 
@@ -52,6 +53,7 @@ consul Upstreams are typically generated automatically by Gloo from the consul A
 | `serviceSpec` | [.options.gloo.solo.io.ServiceSpec](../../service_spec.proto.sk/#servicespec) | An optional Service Spec describing the service listening at this address. |  |
 | `connectEnabled` | `bool` | Is this consul service connect enabled. |  |
 | `dataCenters` | `[]string` | The data centers in which the service instance represented by this upstream is registered. |  |
+| `useTls` | `bool` | Whether or not to use HTTP (false, default) or HTTPS (true) when communicating with this consul upstream If this configuration includes an SSL config, HTTPS is always used and this value is ignored. |  |
 
 
 
