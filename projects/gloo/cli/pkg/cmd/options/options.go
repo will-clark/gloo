@@ -27,6 +27,7 @@ type Options struct {
 	Route     Route
 	Get       Get
 	Add       Add
+	Istio     Istio
 	Remove    Remove
 	Cluster   Cluster
 }
@@ -153,6 +154,11 @@ type RouteMatchers struct {
 type Add struct {
 	Route  InputRoute
 	DryRun bool // print resource as a kubernetes style yaml and exit without writing to storage
+}
+
+type Istio struct {
+	Version string // version of istio we are dealing with
+	DryRun  bool   // print resource as a kubernetes style yaml and exit without writing to storage
 }
 
 type InputRoute struct {
