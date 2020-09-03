@@ -1,0 +1,4 @@
+changelog:
+- type: NEW_FEATURE
+  description: Add useTls value to consul upstream config for easy https configuration
+  issueLink:  https://github.com/solo-io/gloo/issues/2544
