@@ -6,6 +6,11 @@ import (
 	"net/url"
 	"time"
 
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
+
 	"github.com/hashicorp/consul/api"
 	"github.com/rotisserie/eris"
 
@@ -14,9 +19,9 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 )
 
 var _ discovery.DiscoveryPlugin = new(plugin)
@@ -52,7 +57,7 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 	}
 
 	scheme := "http"
-	if u.SslConfig != nil || spec.UseTls {
+	if u.SslConfig != nil {
 		scheme = "https"
 	}
 
@@ -87,13 +92,30 @@ func (p *plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
-	_, ok := in.UpstreamType.(*v1.Upstream_Consul)
+	consulSpec, ok := in.UpstreamType.(*v1.Upstream_Consul)
+	spec := consulSpec.Consul
+
 	if !ok {
 		return nil
 	}
 
 	// consul upstreams use EDS
 	xds.SetEdsOnCluster(out)
+
+	out.ClusterDiscoveryType = &envoyapi.Cluster_Type{
+		Type: envoyapi.Cluster_STATIC,
+	}
+
+	if spec.UseTls {
+		// tell envoy to use TLS to connect to this upstream
+		if out.TransportSocket == nil {
+			tlsContext := &envoyauth.UpstreamTlsContext{}
+			out.TransportSocket = &envoycore.TransportSocket{
+				Name:       wellknown.TransportSocketTls,
+				ConfigType: &envoycore.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(tlsContext)},
+			}
+		}
+	}
 
 	return nil
 }
