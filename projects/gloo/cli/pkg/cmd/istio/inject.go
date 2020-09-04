@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"math"
 	"strings"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/istio/sidecars"
@@ -16,7 +15,6 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes/duration"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/spf13/cobra"
 
 	envoy_config_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
@@ -34,6 +32,7 @@ const (
 	thirdPartyJwt            = "third-party-jwt"
 	envoyDataKey             = "envoy.yaml"
 	sdsClusterName           = "gateway_proxy_sds"
+	istioDefaultNS           = "istio-system"
 )
 
 var (
@@ -41,6 +40,8 @@ var (
 	ErrSdsAlreadyPresent = errors.New("sds sidecar container already exists on gateway-proxy pod")
 	// ErrIstioAlreadyPresent occurs when trying to add an istio sidecar to a gateway-proxy which already has one
 	ErrIstioAlreadyPresent = errors.New("istio-proxy sidecar container already exists on gateway-proxy pod")
+	// ErrIstioVersionUndetermined occurs when the version of istio could not be determined from the istiod pod
+	ErrIstioVersionUndetermined = errors.New("version of istio running could not be determined")
 )
 
 // Inject is an istio subcommand in glooctl which can be used to inject an SDS
@@ -91,7 +92,6 @@ func istioInject(args []string, opts *options.Options) error {
 			// Check if sidecars already exist
 			if len(containers) > 1 {
 				for _, container := range containers {
-					// TODO (shane): Properly type these errors
 					if container.Name == "sds" {
 						return ErrSdsAlreadyPresent
 					}
@@ -144,8 +144,16 @@ func addSdsSidecar(deployment *appsv1.Deployment) {
 // addIstioSidecar adds an Istio sidecar to the given deployment's containers
 func addIstioSidecar(deployment *appsv1.Deployment) error {
 	// Get current istio version & JWT policy from cluster
-	istioVersion := getIstioVersion()
-	jwtPolicy := getJWTPolicy()
+	// TODO (shane): Allow passing custom namespace
+	istioVersion, err := getIstioVersion(istioDefaultNS)
+	if err != nil {
+		return err
+	}
+
+	jwtPolicy, err := getJWTPolicy(istioDefaultNS)
+	if err != nil {
+		return err
+	}
 
 	// Get the appropriate sidecar based on Istio configuration currently deployed
 	istioSidecar, err := sidecars.GetIstioSidecar(istioVersion, jwtPolicy)
@@ -194,7 +202,11 @@ func addIstioVolumes(deployment *appsv1.Deployment) {
 			},
 		},
 	}
-	if getJWTPolicy() == thirdPartyJwt {
+	jwtPolicy, err := getJWTPolicy(istioDefaultNS)
+	if err != nil {
+		jwtPolicy = thirdPartyJwt
+	}
+	if jwtPolicy == thirdPartyJwt {
 		istioServiceAccount := corev1.Volume{
 			Name: "istio-token",
 			VolumeSource: corev1.VolumeSource{
@@ -230,15 +242,8 @@ func addSdsCluster(configMap *corev1.ConfigMap) error {
 	gatewayProxySds := &envoy_config_cluster.Cluster{
 		Name:           sdsClusterName,
 		ConnectTimeout: &duration.Duration{Nanos: 250000000}, // 0.25s
-		// Need to add "http2_protocol_options: {}" for this to work,
-		// But if it's nil it will be ommitted from the output YAML.
-		// This is a workaround to instantiate by using one of the default
-		// values to force it to render into the YAML.
-		Http2ProtocolOptions: &envoy_config_core_v3.Http2ProtocolOptions{
-			MaxOutboundFrames: &wrappers.UInt32Value{
-				Value: math.Float32bits(10000),
-			},
-		},
+		// Add "http2_protocol_options: {}" in yaml to enable http2, needed for grpc.
+		Http2ProtocolOptions: &envoy_config_core_v3.Http2ProtocolOptions{},
 		LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
 			ClusterName: sdsClusterName,
 			Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{
@@ -294,14 +299,66 @@ func envoyConfigFromString(config string) (envoy_config_bootstrap.Bootstrap, err
 	return bootstrapConfig, err
 }
 
-func getIstioVersion() string {
-	// TODO (shane): Unstub, get from istiod or pilot?
-	return "1.6.8"
+func getIstioVersion(namespace string) (string, error) {
+	client := helpers.MustKubeClient()
+	_, err := client.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	deployments, err := client.AppsV1().Deployments(namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return "", err
+	}
+
+	for _, deployment := range deployments.Items {
+		if deployment.Name == "istiod" {
+			containers := deployment.Spec.Template.Spec.Containers
+			for _, container := range containers {
+				if container.Name == "discovery" {
+					img := strings.SplitAfter(container.Image, ":")
+					if len(img) != 2 {
+						return "", ErrIstioVersionUndetermined
+					}
+					fmt.Printf("Istio version found - %q", img[1])
+					return img[1], nil
+				}
+			}
+
+		}
+	}
+	return "", ErrIstioVersionUndetermined
 }
 
-func getJWTPolicy() string {
-	// TODO (shane): Unstub
-	return "third-party-jwt"
+// Get the JWT policy from istiod
+func getJWTPolicy(namespace string) (string, error) {
+	client := helpers.MustKubeClient()
+	_, err := client.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	deployments, err := client.AppsV1().Deployments(namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return "", err
+	}
+
+	for _, deployment := range deployments.Items {
+		if deployment.Name == "istiod" {
+			containers := deployment.Spec.Template.Spec.Containers
+			for _, container := range containers {
+				if container.Name == "discovery" {
+					for _, env := range container.Env {
+						if env.Name == "JWT_POLICY" {
+							return env.Value, nil
+						}
+					}
+				}
+			}
+
+		}
+	}
+
+	// Default to third-party if not found
+	return "third-party-jwt", nil
 }
 
 func getGlooVersion() string {

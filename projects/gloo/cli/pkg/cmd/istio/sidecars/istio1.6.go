@@ -62,15 +62,6 @@ func generateIstio16Sidecar(version, jwtPolicy string) *corev1.Container {
 				Name:  "ISTIO_META_MESH_ID",
 				Value: "cluster.local",
 			},
-			// TODO (shane): Remove 2minute cert rotation after debugging
-			{
-				Name:  "SECRET_TTL",
-				Value: "2m",
-			},
-			{
-				Name:  "SECRET_ROTATION_CHECK_INTERVAL",
-				Value: "2m",
-			},
 			{
 				Name: "POD_NAME",
 				ValueFrom: &corev1.EnvVarSource{
