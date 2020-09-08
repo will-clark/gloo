@@ -65,7 +65,9 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 					}
 					destination := strings.Join([]string{downloadPath, plugin.Name}, string(os.PathSeparator))
 
-					return downloadAsset(desiredVersionedPluginUrl, destination)
+					fmt.Printf("url %v file %v", desiredVersionedPluginUrl, destination)
+
+					return nil
 				}
 			}
 
@@ -78,7 +80,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	cmd.PersistentFlags().StringVar(&opts.Plugin.Install.ReleaseTag, "release", "latest", "Which release "+
 		"to download.")
 	cmd.PersistentFlags().StringVar(&opts.Plugin.Install.DownloadPath, "path", "", "Desired path for your "+
-		"glooctl plugin. Defaults to the location of your currently executing binary.")
+		"glooctl plugin. Defaults to the location of your glooctl binary.")
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }
@@ -94,5 +96,6 @@ func downloadAsset(downloadUrl string, destFile string) error {
 	}); err != nil {
 		return err
 	}
+
 	return nil
 }
