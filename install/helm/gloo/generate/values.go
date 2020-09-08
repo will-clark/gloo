@@ -93,8 +93,8 @@ type Knative struct {
 	Version                    *string           `json:"version,omitEmpty" desc:"the version of knative installed to the cluster. if using version < 0.8.0, gloo will use Knative's ClusterIngress API for configuration rather than the namespace-scoped Ingress"`
 	Proxy                      *KnativeProxy     `json:"proxy,omitempty"`
 	RequireIngressClass        *bool             `json:"requireIngressClass" desc:"only serve traffic for Knative Ingress objects with the annotation 'networking.knative.dev/ingress.class: gloo.ingress.networking.knative.dev'."`
-	ExtraKnativeInternalLabels map[string]string `json:"extraKnativeInternalLabels,omitempty" desc:"Optional extra key-value pairs to add to the metadata.labels data of the knative internal pod."`
-	ExtraKnativeExternalLabels map[string]string `json:"extraKnativeExternalLabels,omitempty" desc:"Optional extra key-value pairs to add to the metadata.labels data of the knative external pod."`
+	ExtraKnativeInternalLabels map[string]string `json:"extraKnativeInternalLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the knative internal deployment."`
+	ExtraKnativeExternalLabels map[string]string `json:"extraKnativeExternalLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the knative external deployment."`
 }
 
 type KnativeProxy struct {
@@ -103,7 +103,7 @@ type KnativeProxy struct {
 	HttpsPort                      int               `json:"httpsPort,omitempty" desc:"HTTPS port for the proxy"`
 	Tracing                        *string           `json:"tracing,omitempty" desc:"tracing configuration"`
 	LoopBackAddress                string            `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
-	ExtraClusterIngressProxyLabels map[string]string `json:"extraClusterIngressProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the metadata.labels data of the cluster ingress proxy pod."`
+	ExtraClusterIngressProxyLabels map[string]string `json:"extraClusterIngressProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the cluster ingress proxy deployment."`
 	*DeploymentSpec
 	*ServiceSpec
 }
@@ -120,7 +120,7 @@ type Settings struct {
 	DisableProxyGarbageCollection bool                 `json:"disableProxyGarbageCollection" desc:"Set this option to determine the state of an Envoy listener when the corresponding Gloo Proxy resource has no routes. If false (default), Gloo will propagate the state of the Proxy to Envoy, resetting the listener to a clean slate with no routes. If true, Gloo will keep serving the routes from the last applied valid configuration."`
 	DisableKubernetesDestinations bool                 `json:"disableKubernetesDestinations" desc:"Gloo allows you to directly reference a Kubernetes service as a routing destination. To enable this feature, Gloo scans the cluster for Kubernetes services and creates a special type of in-memory Upstream to represent them. If the cluster contains a lot of services and you do not restrict the namespaces Gloo is watching, this can result in significant overhead. If you do not plan on using this feature, you can set this flag to true to turn it off."`
 	Aws                           AwsSettings          `json:"aws,omitempty"`
-	RateLimit                     interface{}          `json:"rateLimit" desc:"Partial config for GlooE’s rate-limiting service, based on Envoy’s rate-limit service; supports Envoy’s rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit descriptors here, which define the limits for requests based on their descriptors. Configure rate-limits (composed of actions, which define how request characteristics get translated into descriptors) on the VirtualHost or its routes."`
+	RateLimit                     interface{}          `json:"rateLimit,omitempty" desc:"Partial config for GlooE’s rate-limiting service, based on Envoy’s rate-limit service; supports Envoy’s rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit descriptors here, which define the limits for requests based on their descriptors. Configure rate-limits (composed of actions, which define how request characteristics get translated into descriptors) on the VirtualHost or its routes."`
 }
 
 type AwsSettings struct {
@@ -150,7 +150,7 @@ type GlooDeployment struct {
 	RunAsUser              float64           `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
 	ExternalTrafficPolicy  string            `json:"externalTrafficPolicy,omitempty" desc:"Set the external traffic policy on the gloo service"`
 	DisableUsageStatistics bool              `json:"disableUsageStatistics" desc:"Disable the collection of gloo usage statistics"`
-	ExtraGlooLabels        map[string]string `json:"extraGlooLabels,omitempty" desc:"Optional extra key-value pairs to add to the metadata.labels data of the primary gloo pod."`
+	ExtraGlooLabels        map[string]string `json:"extraGlooLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the primary gloo deployment."`
 	*DeploymentSpec
 }
 
@@ -166,7 +166,8 @@ type DiscoveryDeployment struct {
 	Stats                *Stats            `json:"stats,omitempty" desc:"overrides for prometheus stats published by the discovery pod"`
 	FloatingUserId       bool              `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
 	RunAsUser            float64           `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
-	ExtraDiscoveryLabels map[string]string `json:"extraDiscoveryLabels,omitempty" desc:"Optional extra key-value pairs to add to the metadata.labels data of the gloo discovery pod."`
+	FsGroup              float64           `json:"fsGroup" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
+	ExtraDiscoveryLabels map[string]string `json:"extraDiscoveryLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo discovery deployment."`
 	*DeploymentSpec
 }
 
@@ -204,7 +205,7 @@ type GatewayDeployment struct {
 	Stats              *Stats            `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gateway pod"`
 	FloatingUserId     bool              `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
 	RunAsUser          float64           `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
-	ExtraGatewayLabels map[string]string `json:"extraGatewayLabels,omitempty" desc:"Optional extra key-value pairs to add to the metadata.labels data of the gloo gateway pod."`
+	ExtraGatewayLabels map[string]string `json:"extraGatewayLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo gateway deployment."`
 	*DeploymentSpec
 }
 
@@ -284,7 +285,7 @@ type GatewayProxyPodTemplate struct {
 	GracefulShutdown              *GracefulShutdownSpec `json:"gracefulShutdown,omitempty"`
 	TerminationGracePeriodSeconds int                   `json:"terminationGracePeriodSeconds" desc:"Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#podspec-v1-core) for more info"`
 	CustomReadinessProbe          *appsv1.Probe         `json:"customReadinessProbe,omitEmpty"`
-	ExtraGatewayProxyLabels       map[string]string     `json:"extraGatewayProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the metadata.labels data of the gloo gateway proxy pod."`
+	ExtraGatewayProxyLabels       map[string]string     `json:"extraGatewayProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo gateway proxy deployment."`
 }
 
 type GracefulShutdownSpec struct {
@@ -328,7 +329,7 @@ type AccessLogger struct {
 	Stats                   *Stats            `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gloo pod"`
 	RunAsUser               float64           `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
 	FsGroup                 float64           `json:"fsGroup" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
-	ExtraAccessLoggerLabels map[string]string `json:"extraAccessLoggerLabels,omitempty" desc:"Optional extra key-value pairs to add to the metadata.labels data of the gloo access logger pod."`
+	ExtraAccessLoggerLabels map[string]string `json:"extraAccessLoggerLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo access logger deployment."`
 	*DeploymentSpec
 }
 
@@ -347,7 +348,7 @@ type IngressDeployment struct {
 	Image              *Image            `json:"image,omitempty"`
 	RunAsUser          float64           `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
 	FloatingUserId     bool              `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
-	ExtraIngressLabels map[string]string `json:"extraIngressLabels,omitempty" desc:"Optional extra key-value pairs to add to the metadata.labels data of the ingress pod."`
+	ExtraIngressLabels map[string]string `json:"extraIngressLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the ingress deployment."`
 	*DeploymentSpec
 }
 
@@ -356,6 +357,7 @@ type IngressProxy struct {
 	ConfigMap       *IngressProxyConfigMap  `json:"configMap,omitempty"`
 	Tracing         *string                 `json:"tracing,omitempty"`
 	LoopBackAddress string                  `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
+	Label           string                  `json:"label" desc:"Value for label gloo. Use a unique value to use several ingress proxy instances in the same cluster. Default is ingress-proxy"`
 	*ServiceSpec
 }
 
@@ -367,7 +369,7 @@ type IngressProxyDeployment struct {
 	ExtraAnnotations        map[string]string `json:"extraAnnotations,omitempty"`
 	FloatingUserId          bool              `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
 	RunAsUser               float64           `json:"runAsUser" desc:"Explicitly set the user ID for the pod to run as. Default is 10101"`
-	ExtraIngressProxyLabels map[string]string `json:"extraIngressProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the metadata.labels data of the ingress proxy pod."`
+	ExtraIngressProxyLabels map[string]string `json:"extraIngressProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the spec.template.metadata.labels data of the ingress proxy deployment."`
 	*DeploymentSpec
 }
 

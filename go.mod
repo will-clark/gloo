@@ -7,7 +7,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.0.3
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b
 	github.com/avast/retry-go v2.4.3+incompatible
-	github.com/aws/aws-sdk-go v1.30.15
+	github.com/aws/aws-sdk-go v1.34.9
 	github.com/cncf/udpa/go v0.0.0-20200629203442-efcf912fb354
 	github.com/cratonica/2goarray v0.0.0-20190331194516-514510793eaa
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
@@ -60,7 +60,7 @@ require (
 	github.com/solo-io/reporting-client v0.1.2
 	github.com/solo-io/skv2 v0.7.2
 	github.com/solo-io/solo-apis v0.0.0-20200717214114-6a1daa5a5d05
-	github.com/solo-io/solo-kit v0.13.11
+	github.com/solo-io/solo-kit v0.13.13
 	github.com/solo-io/wasme v0.0.13-rc1
 	github.com/spf13/afero v1.2.2
 	github.com/spf13/cobra v0.0.5
