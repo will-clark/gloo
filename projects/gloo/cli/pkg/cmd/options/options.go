@@ -157,9 +157,8 @@ type Add struct {
 }
 
 type Istio struct {
-	Version  string // version of istio we are dealing with
-	DryRun   bool   // print resource as a kubernetes style yaml and exit without writing to storage
-	Upstream string // upstream for which we are changing the istio mTLS settings
+	Upstream  string // upstream for which we are changing the istio mTLS settings
+	Namespace string // namespace in which istio is installed
 }
 
 type InputRoute struct {

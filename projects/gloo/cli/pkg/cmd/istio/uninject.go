@@ -3,7 +3,6 @@ package istio
 import (
 	"bytes"
 	"errors"
-	"fmt"
 
 	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/jsonpb"
@@ -42,7 +41,6 @@ func Uninject(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := istioUninject(args, opts)
 			if err != nil {
-				fmt.Printf("Error: %v\n", err)
 				return err
 			}
 			return nil
@@ -57,12 +55,14 @@ func Uninject(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra
 // istioUninject removes SDS & istio-proxy sidecars,
 // as well as updating the gateway-proxy ConfigMap
 func istioUninject(args []string, opts *options.Options) error {
+	glooNS := opts.Metadata.Namespace
+
 	client := helpers.MustKubeClient()
-	_, err := client.CoreV1().Namespaces().Get(opts.Metadata.Namespace, metav1.GetOptions{})
+	_, err := client.CoreV1().Namespaces().Get(glooNS, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
-	deployments, err := client.AppsV1().Deployments(opts.Metadata.Namespace).List(metav1.ListOptions{})
+	deployments, err := client.AppsV1().Deployments(glooNS).List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ func istioUninject(args []string, opts *options.Options) error {
 			deployment.Spec.Template.Spec.Containers = containers
 
 			removeIstioVolumes(&deployment)
-			_, err = client.AppsV1().Deployments(opts.Metadata.Namespace).Update(&deployment)
+			_, err = client.AppsV1().Deployments(glooNS).Update(&deployment)
 			if err != nil {
 				return err
 			}
@@ -107,7 +107,7 @@ func istioUninject(args []string, opts *options.Options) error {
 	}
 
 	// Remove gateway_proxy_sds cluster from the gateway-proxy configmap
-	configMaps, err := client.CoreV1().ConfigMaps(opts.Metadata.Namespace).List(metav1.ListOptions{})
+	configMaps, err := client.CoreV1().ConfigMaps(glooNS).List(metav1.ListOptions{})
 	for _, configMap := range configMaps.Items {
 		if configMap.Name == gatewayProxyConfigMap {
 			// Make sure we don't already have the gateway_proxy_sds cluster set up
@@ -115,7 +115,7 @@ func istioUninject(args []string, opts *options.Options) error {
 			if err != nil {
 				return err
 			}
-			_, err = client.CoreV1().ConfigMaps(opts.Metadata.Namespace).Update(&configMap)
+			_, err = client.CoreV1().ConfigMaps(glooNS).Update(&configMap)
 			if err != nil {
 				return err
 			}

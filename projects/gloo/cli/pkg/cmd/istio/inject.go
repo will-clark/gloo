@@ -16,6 +16,7 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	envoy_config_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -27,15 +28,13 @@ import (
 )
 
 const (
-	istioInjectionAnnotation = "sidecar.istio.io/inject"
-	thirdPartyJwt            = "third-party-jwt"
-	envoyDataKey             = "envoy.yaml"
-	sdsClusterName           = "gateway_proxy_sds"
-	gatewayProxyConfigMap    = "gateway-proxy-envoy-config"
-	istioDefaultNS           = "istio-system"
-	glooDefaultNS            = "gloo-system"
-	loopbackAddr             = "127.0.0.1"
-	sdsPort                  = 8234
+	thirdPartyJwt         = "third-party-jwt"
+	envoyDataKey          = "envoy.yaml"
+	sdsClusterName        = "gateway_proxy_sds"
+	gatewayProxyConfigMap = "gateway-proxy-envoy-config"
+	istioDefaultNS        = "istio-system"
+	loopbackAddr          = "127.0.0.1"
+	sdsPort               = 8234
 )
 
 var (
@@ -68,7 +67,6 @@ func Inject(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.C
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := istioInject(args, opts)
 			if err != nil {
-				fmt.Printf("Error: %v\n", err)
 				return err
 			}
 			return nil
@@ -76,19 +74,22 @@ func Inject(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.C
 	}
 	pflags := cmd.PersistentFlags()
 	flagutils.AddOutputFlag(pflags, &opts.Top.Output)
-	// flagutils.AddRouteFlags(pflags, &opts.Istio.Version)
 	cliutils.ApplyOptions(cmd, optionsFunc)
+	addIstioNamespaceFlag(pflags, &opts.Istio.Namespace)
 	return cmd
 }
 
 // Add SDS & istio-proxy sidecars
 func istioInject(args []string, opts *options.Options) error {
+	glooNS := opts.Metadata.Namespace
+	istioNS := opts.Istio.Namespace
+
 	client := helpers.MustKubeClient()
-	_, err := client.CoreV1().Namespaces().Get(opts.Metadata.Namespace, metav1.GetOptions{})
+	_, err := client.CoreV1().Namespaces().Get(glooNS, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
-	deployments, err := client.AppsV1().Deployments(opts.Metadata.Namespace).List(metav1.ListOptions{})
+	deployments, err := client.AppsV1().Deployments(glooNS).List(metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
@@ -108,15 +109,15 @@ func istioInject(args []string, opts *options.Options) error {
 				}
 			}
 
-			err := addSdsSidecar(&deployment)
+			err := addSdsSidecar(&deployment, glooNS)
 			if err != nil {
 				return err
 			}
-			err = addIstioSidecar(&deployment)
+			err = addIstioSidecar(&deployment, istioNS)
 			if err != nil {
 				return err
 			}
-			_, err = client.AppsV1().Deployments(opts.Metadata.Namespace).Update(&deployment)
+			_, err = client.AppsV1().Deployments(glooNS).Update(&deployment)
 			if err != nil {
 				return err
 			}
@@ -125,7 +126,7 @@ func istioInject(args []string, opts *options.Options) error {
 	}
 
 	// Add gateway_proxy_sds configmap
-	configMaps, err := client.CoreV1().ConfigMaps(opts.Metadata.Namespace).List(metav1.ListOptions{})
+	configMaps, err := client.CoreV1().ConfigMaps(glooNS).List(metav1.ListOptions{})
 	for _, configMap := range configMaps.Items {
 		if configMap.Name == gatewayProxyConfigMap {
 			// Make sure we don't already have the gateway_proxy_sds cluster set up
@@ -137,7 +138,7 @@ func istioInject(args []string, opts *options.Options) error {
 			if err != nil {
 				return err
 			}
-			_, err = client.CoreV1().ConfigMaps(opts.Metadata.Namespace).Update(&configMap)
+			_, err = client.CoreV1().ConfigMaps(glooNS).Update(&configMap)
 			if err != nil {
 				return err
 			}
@@ -148,9 +149,8 @@ func istioInject(args []string, opts *options.Options) error {
 }
 
 // addSdsSidecar adds an SDS sidecar to the given deployment's containers
-func addSdsSidecar(deployment *appsv1.Deployment) error {
-	// TODO (shane): Allow passing custom Gloo NS
-	glooVersion, err := getGlooVersion(glooDefaultNS)
+func addSdsSidecar(deployment *appsv1.Deployment, glooNamespace string) error {
+	glooVersion, err := getGlooVersion(glooNamespace)
 	if err != nil {
 		return ErrGlooVerUndetermined
 	}
@@ -163,10 +163,9 @@ func addSdsSidecar(deployment *appsv1.Deployment) error {
 }
 
 // addIstioSidecar adds an Istio sidecar to the given deployment's containers
-func addIstioSidecar(deployment *appsv1.Deployment) error {
+func addIstioSidecar(deployment *appsv1.Deployment, istioNamespace string) error {
 	// Get current istio version & JWT policy from cluster
-	// TODO (shane): Allow passing custom Istio namespace
-	istioPilotContainer, err := getIstiodContainer(istioDefaultNS)
+	istioPilotContainer, err := getIstiodContainer(istioNamespace)
 	if err != nil {
 		return err
 	}
@@ -321,4 +320,8 @@ func genGatewayProxyCluster() *envoy_config_cluster.Cluster {
 			},
 		},
 	}
+}
+
+func addIstioNamespaceFlag(set *pflag.FlagSet, strptr *string) {
+	set.StringVar(strptr, "istio-namespace", istioDefaultNS, "namespace in which istio is installed")
 }
