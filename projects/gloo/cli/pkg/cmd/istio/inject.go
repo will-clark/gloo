@@ -17,7 +17,6 @@ import (
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/spf13/cobra"
 
-	envoy_config_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	envoy_config_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_config_endpoint_v3 "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -33,6 +32,9 @@ const (
 	envoyDataKey             = "envoy.yaml"
 	sdsClusterName           = "gateway_proxy_sds"
 	istioDefaultNS           = "istio-system"
+	glooDefaultNS            = "gloo-system"
+	loopbackAddr             = "127.0.0.1"
+	sdsPort                  = 8234
 )
 
 var (
@@ -40,8 +42,12 @@ var (
 	ErrSdsAlreadyPresent = errors.New("sds sidecar container already exists on gateway-proxy pod")
 	// ErrIstioAlreadyPresent occurs when trying to add an istio sidecar to a gateway-proxy which already has one
 	ErrIstioAlreadyPresent = errors.New("istio-proxy sidecar container already exists on gateway-proxy pod")
-	// ErrIstioVersionUndetermined occurs when the version of istio could not be determined from the istiod pod
-	ErrIstioVersionUndetermined = errors.New("version of istio running could not be determined")
+	// ErrImgVerUndetermined occurs when the version of an image could not be determined from a given container
+	ErrImgVerUndetermined = errors.New("version of image could not be determined")
+	// ErrIstioVerUndetermined occurs when the version of istio could not be determined from the istiod pod
+	ErrIstioVerUndetermined = errors.New("version of istio running could not be determined")
+	// ErrGlooVerUndetermined occurs when the version of gloo could not be determined from the gloo pod
+	ErrGlooVerUndetermined = errors.New("version of gloo running could not be determined")
 )
 
 // Inject is an istio subcommand in glooctl which can be used to inject an SDS
@@ -101,10 +107,15 @@ func istioInject(args []string, opts *options.Options) error {
 				}
 			}
 
-			addSdsSidecar(&deployment)
-			addIstioSidecar(&deployment)
-			addIstioVolumes(&deployment)
-			_, err := client.AppsV1().Deployments(opts.Metadata.Namespace).Update(&deployment)
+			err := addSdsSidecar(&deployment)
+			if err != nil {
+				return err
+			}
+			err = addIstioSidecar(&deployment)
+			if err != nil {
+				return err
+			}
+			_, err = client.AppsV1().Deployments(opts.Metadata.Namespace).Update(&deployment)
 			if err != nil {
 				return err
 			}
@@ -133,27 +144,36 @@ func istioInject(args []string, opts *options.Options) error {
 }
 
 // addSdsSidecar adds an SDS sidecar to the given deployment's containers
-func addSdsSidecar(deployment *appsv1.Deployment) {
-	sdsVersion := getGlooVersion()
-	sdsContainer := sidecars.GetSdsSidecar(sdsVersion)
+func addSdsSidecar(deployment *appsv1.Deployment) error {
+	// TODO (shane): Allow passing custom Gloo NS
+	glooVersion, err := getGlooVersion(glooDefaultNS)
+	if err != nil {
+		return ErrGlooVerUndetermined
+	}
+	fmt.Printf("Gloo version found, using %q for SDS sidecar\n", glooVersion)
+	sdsContainer := sidecars.GetSdsSidecar(glooVersion)
 
 	containers := deployment.Spec.Template.Spec.Containers
 	deployment.Spec.Template.Spec.Containers = append(containers, sdsContainer)
+	return nil
 }
 
 // addIstioSidecar adds an Istio sidecar to the given deployment's containers
 func addIstioSidecar(deployment *appsv1.Deployment) error {
 	// Get current istio version & JWT policy from cluster
-	// TODO (shane): Allow passing custom namespace
-	istioVersion, err := getIstioVersion(istioDefaultNS)
+	// TODO (shane): Allow passing custom Istio namespace
+	istioPilotContainer, err := getIstiodContainer(istioDefaultNS)
 	if err != nil {
 		return err
 	}
 
-	jwtPolicy, err := getJWTPolicy(istioDefaultNS)
+	istioVersion, err := getImageVersion(istioPilotContainer)
 	if err != nil {
-		return err
+		return ErrIstioVerUndetermined
 	}
+	fmt.Printf("Istio version found, using %q for Istio sidecar\n", istioVersion)
+
+	jwtPolicy := getJWTPolicy(istioPilotContainer)
 
 	// Get the appropriate sidecar based on Istio configuration currently deployed
 	istioSidecar, err := sidecars.GetIstioSidecar(istioVersion, jwtPolicy)
@@ -164,12 +184,18 @@ func addIstioSidecar(deployment *appsv1.Deployment) error {
 	containers := deployment.Spec.Template.Spec.Containers
 	deployment.Spec.Template.Spec.Containers = append(containers, *istioSidecar)
 
+	jwtPolicyIs3rdParty := false
+	if jwtPolicy == thirdPartyJwt {
+		jwtPolicyIs3rdParty = true
+	}
+	addIstioVolumes(deployment, jwtPolicyIs3rdParty)
+
 	return nil
 }
 
 // addIstioVolumes adds the istio volumes to the given deployment,
-// taking Istio's JWT_POLICY into account.
-func addIstioVolumes(deployment *appsv1.Deployment) {
+// optionally adding the istio-token service account token.
+func addIstioVolumes(deployment *appsv1.Deployment, includeToken bool) {
 	defaultMode := int32(420)
 	tokenExpirationSeconds := int64(43200)
 
@@ -202,11 +228,7 @@ func addIstioVolumes(deployment *appsv1.Deployment) {
 			},
 		},
 	}
-	jwtPolicy, err := getJWTPolicy(istioDefaultNS)
-	if err != nil {
-		jwtPolicy = thirdPartyJwt
-	}
-	if jwtPolicy == thirdPartyJwt {
+	if includeToken {
 		istioServiceAccount := corev1.Volume{
 			Name: "istio-token",
 			VolumeSource: corev1.VolumeSource{
@@ -239,37 +261,7 @@ func addSdsCluster(configMap *corev1.ConfigMap) error {
 
 	clusters := bootstrapConfig.StaticResources.Clusters
 
-	gatewayProxySds := &envoy_config_cluster.Cluster{
-		Name:           sdsClusterName,
-		ConnectTimeout: &duration.Duration{Nanos: 250000000}, // 0.25s
-		// Add "http2_protocol_options: {}" in yaml to enable http2, needed for grpc.
-		Http2ProtocolOptions: &envoy_config_core_v3.Http2ProtocolOptions{},
-		LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
-			ClusterName: sdsClusterName,
-			Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{
-				{
-					LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{
-						{
-							HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
-								Endpoint: &envoy_config_endpoint_v3.Endpoint{
-									Address: &envoy_config_core_v3.Address{
-										Address: &envoy_config_core_v3.Address_SocketAddress{
-											SocketAddress: &envoy_config_core_v3.SocketAddress{
-												Address: "127.0.0.1",
-												PortSpecifier: &envoy_config_core_v3.SocketAddress_PortValue{
-													PortValue: uint32(8234),
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
+	gatewayProxySds := genGatewayProxyCluster()
 
 	bootstrapConfig.StaticResources.Clusters = append(clusters, gatewayProxySds)
 
@@ -293,90 +285,36 @@ func addSdsCluster(configMap *corev1.ConfigMap) error {
 	return nil
 }
 
-func envoyConfigFromString(config string) (envoy_config_bootstrap.Bootstrap, error) {
-	var bootstrapConfig envoy_config_bootstrap.Bootstrap
-	bootstrapConfig, err := unmarshalYAMLConfig(config)
-	return bootstrapConfig, err
-}
-
-func getIstioVersion(namespace string) (string, error) {
-	client := helpers.MustKubeClient()
-	_, err := client.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
-	if err != nil {
-		return "", err
+func genGatewayProxyCluster() *envoy_config_cluster.Cluster {
+	return &envoy_config_cluster.Cluster{
+		Name:           sdsClusterName,
+		ConnectTimeout: &duration.Duration{Nanos: 250000000}, // 0.25s
+		// Add "http2_protocol_options: {}" in yaml to enable http2, needed for grpc.
+		Http2ProtocolOptions: &envoy_config_core_v3.Http2ProtocolOptions{},
+		LoadAssignment: &envoy_config_endpoint_v3.ClusterLoadAssignment{
+			ClusterName: sdsClusterName,
+			Endpoints: []*envoy_config_endpoint_v3.LocalityLbEndpoints{
+				{
+					LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{
+						{
+							HostIdentifier: &envoy_config_endpoint_v3.LbEndpoint_Endpoint{
+								Endpoint: &envoy_config_endpoint_v3.Endpoint{
+									Address: &envoy_config_core_v3.Address{
+										Address: &envoy_config_core_v3.Address_SocketAddress{
+											SocketAddress: &envoy_config_core_v3.SocketAddress{
+												Address: loopbackAddr,
+												PortSpecifier: &envoy_config_core_v3.SocketAddress_PortValue{
+													PortValue: uint32(sdsPort),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
-	deployments, err := client.AppsV1().Deployments(namespace).List(metav1.ListOptions{})
-	if err != nil {
-		return "", err
-	}
-
-	for _, deployment := range deployments.Items {
-		if deployment.Name == "istiod" {
-			containers := deployment.Spec.Template.Spec.Containers
-			for _, container := range containers {
-				if container.Name == "discovery" {
-					img := strings.SplitAfter(container.Image, ":")
-					if len(img) != 2 {
-						return "", ErrIstioVersionUndetermined
-					}
-					fmt.Printf("Istio version found - %q", img[1])
-					return img[1], nil
-				}
-			}
-
-		}
-	}
-	return "", ErrIstioVersionUndetermined
-}
-
-// Get the JWT policy from istiod
-func getJWTPolicy(namespace string) (string, error) {
-	client := helpers.MustKubeClient()
-	_, err := client.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
-	if err != nil {
-		return "", err
-	}
-	deployments, err := client.AppsV1().Deployments(namespace).List(metav1.ListOptions{})
-	if err != nil {
-		return "", err
-	}
-
-	for _, deployment := range deployments.Items {
-		if deployment.Name == "istiod" {
-			containers := deployment.Spec.Template.Spec.Containers
-			for _, container := range containers {
-				if container.Name == "discovery" {
-					for _, env := range container.Env {
-						if env.Name == "JWT_POLICY" {
-							return env.Value, nil
-						}
-					}
-				}
-			}
-
-		}
-	}
-
-	// Default to third-party if not found
-	return "third-party-jwt", nil
-}
-
-func getGlooVersion() string {
-	// TODO (shane): Unstub, get from gloo?
-	return "1.5.0-beta20"
-}
-
-func unmarshalYAMLConfig(configYAML string) (envoy_config_bootstrap.Bootstrap, error) {
-	var bootstrapConfig envoy_config_bootstrap.Bootstrap
-	// first step - serialize yaml to json
-	jsondata, err := yaml.YAMLToJSON([]byte(configYAML))
-	if err != nil {
-		return bootstrapConfig, err
-	}
-
-	// second step - unmarshal from json into a bootstrapConfig object
-	jsonreader := bytes.NewReader(jsondata)
-	var unmarshaler jsonpb.Unmarshaler
-	err = unmarshaler.Unmarshal(jsonreader, &bootstrapConfig)
-	return bootstrapConfig, err
 }
