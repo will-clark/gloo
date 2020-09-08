@@ -2,12 +2,11 @@ package install
 
 import (
 	"fmt"
-	"net/http"
 	"os"
+	"os/exec"
 	"runtime"
 	"strings"
 
-	"github.com/inconshreveable/go-update"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/plugin/common"
@@ -63,11 +62,8 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 						splitPath := strings.Split(executablePath, string(os.PathSeparator))
 						downloadPath = strings.Join(splitPath[0:len(splitPath)-1], string(os.PathSeparator))
 					}
-					destination := strings.Join([]string{downloadPath, plugin.Name}, string(os.PathSeparator))
 
-					fmt.Printf("url %v file %v", desiredVersionedPluginUrl, destination)
-
-					return nil
+					return installPlugin(plugin.Name, desiredVersionedPluginUrl, downloadPath)
 				}
 			}
 
@@ -85,17 +81,72 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	return cmd
 }
 
-func downloadAsset(downloadUrl string, destFile string) error {
-	res, err := http.Get(downloadUrl)
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-	if err := update.Apply(res.Body, update.Options{
-		TargetPath: destFile,
-	}); err != nil {
-		return err
-	}
-
-	return nil
+func installPlugin(name, url, destination string) error {
+	cmd := exec.Command("sh", "-c", installScript, "install-plugin-placeholder-arg", url, name, destination)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
+
+const installScript = `
+set -eu
+
+
+# TODO: Checksum validation, configurable destination path
+
+if [ -z "${1-}" ]; then
+     echo A plugin URL must be provided
+     exit 1
+fi
+
+if [ -z "${2-}" ]; then
+     echo A plugin name must be provided
+     exit 1
+fi
+
+if [ -z "${3-}" ]; then
+     echo An installation path must be provided
+     exit 1
+fi
+
+pluginUrl=$1
+pluginName=$2
+pluginPath=$3
+
+tmp=$(mktemp -d /tmp/gloo-plugin.XXXXXX)
+
+#if curl -f ${pluginUrl} >/dev/null 2>&1; then
+#  echo "line 25"
+#  echo "Attempting to download ${pluginName} at ${pluginUrl}"
+#else
+#  echo "${pluginName} not found at ${pluginUrl}"
+#  exit 1
+#fi
+
+(
+  cd "$tmp"
+
+  echo "Downloading ${pluginName}..."
+
+#  SHA=$(curl -sL "${pluginUrl}.sha256" | cut -d' ' -f1)
+  curl -L -o "${pluginName}" "${pluginUrl}"
+  echo "Download complete!, validating checksum..."
+  # TODO restore
+#  checksum=$(openssl dgst -sha256 "${pluginName}" | awk '{ print $2 }')
+#  if [ "$checksum" != "$SHA" ]; then
+#    echo "Checksum validation failed." >&2
+#    exit 1
+#  fi
+#  echo "Checksum valid."
+)
+
+(
+  cd "$HOME"
+  mkdir -p "${pluginPath}"
+  mv "${tmp}/${pluginName}" "${pluginPath}/${pluginName}"
+  chmod +x "${pluginPath}/${pluginName}"
+)
+
+rm -r "$tmp"
+
+echo "${pluginName} was successfully installed to ${pluginPath}/${pluginName} 🎉"`
