@@ -31,6 +31,7 @@ const (
 	thirdPartyJwt            = "third-party-jwt"
 	envoyDataKey             = "envoy.yaml"
 	sdsClusterName           = "gateway_proxy_sds"
+	gatewayProxyConfigMap    = "gateway-proxy-envoy-config"
 	istioDefaultNS           = "istio-system"
 	glooDefaultNS            = "gloo-system"
 	loopbackAddr             = "127.0.0.1"
@@ -126,13 +127,16 @@ func istioInject(args []string, opts *options.Options) error {
 	// Add gateway_proxy_sds configmap
 	configMaps, err := client.CoreV1().ConfigMaps(opts.Metadata.Namespace).List(metav1.ListOptions{})
 	for _, configMap := range configMaps.Items {
-		if configMap.Name == "gateway-proxy-envoy-config" {
+		if configMap.Name == gatewayProxyConfigMap {
 			// Make sure we don't already have the gateway_proxy_sds cluster set up
 			if strings.Contains(configMap.Data["envoy.yaml"], "gateway_proxy_sds") {
-				fmt.Println("Warning: gateway_proxy_sds cluster already found in gateway-proxy-envoy-config configMap, it has not been updated")
+				fmt.Println("Warning: gateway_proxy_sds cluster already found in gateway proxy configMap, it has not been updated")
 				return nil
 			}
 			err := addSdsCluster(&configMap)
+			if err != nil {
+				return err
+			}
 			_, err = client.CoreV1().ConfigMaps(opts.Metadata.Namespace).Update(&configMap)
 			if err != nil {
 				return err

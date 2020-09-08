@@ -35,6 +35,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	// flagutils.AddDryRunFlag(pflags, &opts.Istio.DryRun)
 
 	cmd.AddCommand(Inject(opts))
+	cmd.AddCommand(Uninject(opts))
 	cmd.AddCommand(EnableMTLS(opts))
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd

@@ -289,7 +289,7 @@ spec:
       {{- end }}
 {{- if $global.istioSDS.enabled }}
       - name: istio-proxy
-        image: docker.io/istio/proxyv2:1.6.6 # TODO: (shane) Istio version as configured value (or inject via label annotation)
+        image: docker.io/istio/proxyv2:1.6.6 # TODO: (shane) Istio version as configured value
         args:
         - proxy
         - sidecar
