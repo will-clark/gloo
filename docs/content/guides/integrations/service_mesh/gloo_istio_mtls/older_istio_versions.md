@@ -509,7 +509,7 @@ spec:
         - mountPath: /etc/envoy
           name: envoy-config
       - name: sds
-        image: quay.io/solo-io/sds:1.5.0-beta20
+        image: quay.io/solo-io/sds:1.5.0-beta23
         imagePullPolicy: Always
         ports:
         - containerPort: 8234
@@ -690,7 +690,7 @@ Note that `alpn_protocols` is supported in Upstreams starting in Gloo 1.3.20.
 
 {{% notice warning %}}
 
-The Gloo integration with Istio 1.6.x requires Gloo version 1.5.0-beta20, or higher.
+The Gloo integration with Istio 1.6.x requires Gloo version 1.5.0-beta23, or higher.
 
 {{% /notice %}}
 
@@ -736,7 +736,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.name
-        image: quay.io/solo-io/gloo-envoy-wrapper:1.5.0-beta20
+        image: quay.io/solo-io/gloo-envoy-wrapper:1.5.0-beta23
         imagePullPolicy: IfNotPresent
         name: gateway-proxy
         ports:
@@ -758,7 +758,7 @@ spec:
         - mountPath: /etc/envoy
           name: envoy-config
       - name: sds
-        image: quay.io/solo-io/sds:1.5.0-beta20
+        image: quay.io/solo-io/sds:1.5.0-beta23
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8234

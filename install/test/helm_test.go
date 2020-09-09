@@ -427,7 +427,7 @@ var _ = Describe("Helm Test", func() {
 				})
 			})
 
-			FContext("gloo with istio sds settings", func() {
+			Context("gloo with istio sds settings", func() {
 				var (
 					istioCertsVolume = v1.Volume{
 						Name: "istio-certs",
