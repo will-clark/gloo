@@ -59,6 +59,23 @@ func istioUninject(args []string, opts *options.Options) error {
 	if err != nil {
 		return err
 	}
+
+	// Remove gateway_proxy_sds cluster from the gateway-proxy configmap
+	configMaps, err := client.CoreV1().ConfigMaps(glooNS).List(metav1.ListOptions{})
+	for _, configMap := range configMaps.Items {
+		if configMap.Name == gatewayProxyConfigMap {
+			// Make sure we don't already have the gateway_proxy_sds cluster set up
+			err := removeSdsCluster(&configMap)
+			if err != nil {
+				return err
+			}
+			_, err = client.CoreV1().ConfigMaps(glooNS).Update(&configMap)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	deployments, err := client.AppsV1().Deployments(glooNS).List(metav1.ListOptions{})
 	if err != nil {
 		return err
@@ -100,22 +117,6 @@ func istioUninject(args []string, opts *options.Options) error {
 				return err
 			}
 
-		}
-	}
-
-	// Remove gateway_proxy_sds cluster from the gateway-proxy configmap
-	configMaps, err := client.CoreV1().ConfigMaps(glooNS).List(metav1.ListOptions{})
-	for _, configMap := range configMaps.Items {
-		if configMap.Name == gatewayProxyConfigMap {
-			// Make sure we don't already have the gateway_proxy_sds cluster set up
-			err := removeSdsCluster(&configMap)
-			if err != nil {
-				return err
-			}
-			_, err = client.CoreV1().ConfigMaps(glooNS).Update(&configMap)
-			if err != nil {
-				return err
-			}
 		}
 	}
 

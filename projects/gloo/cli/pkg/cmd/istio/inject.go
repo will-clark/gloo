@@ -87,6 +87,27 @@ func istioInject(args []string, opts *options.Options) error {
 	if err != nil {
 		return err
 	}
+
+	// Add gateway_proxy_sds configmap
+	configMaps, err := client.CoreV1().ConfigMaps(glooNS).List(metav1.ListOptions{})
+	for _, configMap := range configMaps.Items {
+		if configMap.Name == gatewayProxyConfigMap {
+			// Make sure we don't already have the gateway_proxy_sds cluster set up
+			if strings.Contains(configMap.Data["envoy.yaml"], "gateway_proxy_sds") {
+				fmt.Println("Warning: gateway_proxy_sds cluster already found in gateway proxy configMap, it has not been updated")
+				return nil
+			}
+			err := addSdsCluster(&configMap)
+			if err != nil {
+				return err
+			}
+			_, err = client.CoreV1().ConfigMaps(glooNS).Update(&configMap)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	deployments, err := client.AppsV1().Deployments(glooNS).List(metav1.ListOptions{})
 	if err != nil {
 		return err
@@ -120,26 +141,6 @@ func istioInject(args []string, opts *options.Options) error {
 				return err
 			}
 
-		}
-	}
-
-	// Add gateway_proxy_sds configmap
-	configMaps, err := client.CoreV1().ConfigMaps(glooNS).List(metav1.ListOptions{})
-	for _, configMap := range configMaps.Items {
-		if configMap.Name == gatewayProxyConfigMap {
-			// Make sure we don't already have the gateway_proxy_sds cluster set up
-			if strings.Contains(configMap.Data["envoy.yaml"], "gateway_proxy_sds") {
-				fmt.Println("Warning: gateway_proxy_sds cluster already found in gateway proxy configMap, it has not been updated")
-				return nil
-			}
-			err := addSdsCluster(&configMap)
-			if err != nil {
-				return err
-			}
-			_, err = client.CoreV1().ConfigMaps(glooNS).Update(&configMap)
-			if err != nil {
-				return err
-			}
 		}
 	}
 
