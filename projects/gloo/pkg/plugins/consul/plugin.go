@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"sync"
 	"time"
 
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
@@ -35,6 +36,8 @@ type plugin struct {
 	client             consul.ConsulWatcher
 	resolver           DnsResolver
 	dnsPollingInterval time.Duration
+	upstreamHttpsMap   map[string]bool
+	mapLock            sync.RWMutex
 }
 
 func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
@@ -84,7 +87,9 @@ func NewPlugin(client consul.ConsulWatcher, resolver DnsResolver, dnsPollingInte
 	if dnsPollingInterval != nil {
 		pollingInterval = *dnsPollingInterval
 	}
-	return &plugin{client: client, resolver: resolver, dnsPollingInterval: pollingInterval}
+	newMap := make(map[string]bool)
+	mutex := sync.RWMutex{}
+	return &plugin{client: client, resolver: resolver, dnsPollingInterval: pollingInterval, upstreamHttpsMap: newMap, mapLock: mutex}
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {
@@ -106,7 +111,10 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		Type: envoyapi.Cluster_STATIC,
 	}
 
-	if spec.UseTls {
+	p.mapLock.RLock()
+	defer p.mapLock.RUnlock()
+	mapVal, isMapped := p.upstreamHttpsMap[in.Metadata.Namespace + in.Metadata.Name]
+	if spec.UseTls || (mapVal && isMapped) {
 		// tell envoy to use TLS to connect to this upstream
 		if out.TransportSocket == nil {
 			tlsContext := &envoyauth.UpstreamTlsContext{}

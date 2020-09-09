@@ -101,7 +101,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 				cancel = newCancel
 
 				specs := refreshSpecs(ctx, p.client, serviceMeta, errChan)
-				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs, trackedServiceToUpstreams)
+				endpoints := p.BuildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs, trackedServiceToUpstreams)
 
 				previousHash = hashutils.MustHash(endpoints)
 				previousSpecs = specs
@@ -112,7 +112,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 
 			case <-timer.C:
 				// Poll to ensure any DNS updates get picked up in endpoints for EDS
-				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, previousSpecs, trackedServiceToUpstreams)
+				endpoints := p.BuildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, previousSpecs, trackedServiceToUpstreams)
 
 				currentHash := hashutils.MustHash(endpoints)
 				if previousHash == currentHash {
@@ -181,13 +181,14 @@ func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta 
 	return specs.Get()
 }
 
-func buildEndpointsFromSpecs(ctx context.Context, writeNamespace string, resolver DnsResolver, specs []*consulapi.CatalogService, trackedServiceToUpstreams map[string][]*v1.Upstream) v1.EndpointList {
+//visible for testing
+func (p *plugin) BuildEndpointsFromSpecs(ctx context.Context, writeNamespace string, resolver DnsResolver, specs []*consulapi.CatalogService, trackedServiceToUpstreams map[string][]*v1.Upstream) v1.EndpointList {
 	var endpoints v1.EndpointList
 	for _, spec := range specs {
 		if upstreams, ok := trackedServiceToUpstreams[spec.ServiceName]; ok {
 			// TODO if buildEndpoints fails temporarily due to dns failure, we will remove it from eds.
 			// tracking issue: https://github.com/solo-io/gloo/issues/2576
-			if eps, err := buildEndpoints(ctx, writeNamespace, resolver, spec, upstreams); err != nil {
+			if eps, err := p.BuildEndpoints(ctx, writeNamespace, resolver, spec, upstreams); err != nil {
 				contextutils.LoggerFrom(ctx).Warnf("consul eds plugin encountered error resolving DNS for consul service %v", spec, err)
 			} else {
 				endpoints = append(endpoints, eps...)
@@ -254,7 +255,8 @@ func BuildDataCenterMetadata(dataCenters []string, upstreams []*v1.Upstream) map
 	return labels
 }
 
-func buildEndpoints(ctx context.Context, namespace string, resolver DnsResolver, service *consulapi.CatalogService, upstreams []*v1.Upstream) ([]*v1.Endpoint, error) {
+// Visible for testing
+func (p *plugin) BuildEndpoints(ctx context.Context, namespace string, resolver DnsResolver, service *consulapi.CatalogService, upstreams []*v1.Upstream) ([]*v1.Endpoint, error) {
 
 	// Address is the IP address of the Consul node on which the service is registered.
 	// ServiceAddress is the IP address of the service host — if empty, node address should be used
@@ -270,7 +272,7 @@ func buildEndpoints(ctx context.Context, namespace string, resolver DnsResolver,
 
 	var endpoints []*v1.Endpoint
 	for _, ipAddr := range ipAddresses {
-		endpoints = append(endpoints, buildEndpoint(namespace, address, ipAddr, service, upstreams))
+		endpoints = append(endpoints, p.buildEndpoint(namespace, address, ipAddr, service, upstreams))
 	}
 	return endpoints, nil
 }
@@ -301,7 +303,7 @@ func getIpAddresses(ctx context.Context, address string, resolver DnsResolver) (
 	return ipAddresses, nil
 }
 
-func buildEndpoint(namespace, address, ipAddress string, service *consulapi.CatalogService, upstreams []*v1.Upstream) *v1.Endpoint {
+func (p *plugin) buildEndpoint(namespace, address, ipAddress string, service *consulapi.CatalogService, upstreams []*v1.Upstream) *v1.Endpoint {
 	hostname := ""
 	var healthCheckConfig *v1.HealthCheckConfig
 	if address != ipAddress {
@@ -311,6 +313,16 @@ func buildEndpoint(namespace, address, ipAddress string, service *consulapi.Cata
 			Hostname: hostname,
 		}
 	}
+	// check here
+	if service.ServicePort == 443 {
+		p.mapLock.Lock()
+		defer p.mapLock.Unlock()
+		for _, upstream := range upstreams {
+			//todo make thread safe
+			p.upstreamHttpsMap[upstream.Metadata.Namespace + upstream.Metadata.Name] = true
+		}
+	}
+
 	return &v1.Endpoint{
 		Metadata: core.Metadata{
 			Namespace:       namespace,

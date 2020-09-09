@@ -579,7 +579,8 @@ var _ = Describe("Consul EDS", func() {
 
 			// make sure the we have a correct number of generated endpoints:
 
-			endpoints := buildEndpointsFromSpecs(context.TODO(), writeNamespace, mockDnsResolver, svcs, trackedServiceToUpstreams)
+			eds := NewPlugin(mock_consul.NewMockConsulWatcher(ctrl), mockDnsResolver, nil)
+			endpoints := eds.BuildEndpointsFromSpecs(context.TODO(), writeNamespace, mockDnsResolver, svcs, trackedServiceToUpstreams)
 			endpontNames := map[string]bool{}
 			for _, endpoint := range endpoints {
 				fmt.Fprintf(GinkgoWriter, "%s%v\n", "endpoint: ", endpoint)
@@ -631,7 +632,8 @@ var _ = Describe("Consul EDS", func() {
 			// add another upstream so to test that tag2 is in the labels.
 			upstream2 := createTestFilteredUpstream("my-svc-2", "my-svc", []string{"tag-2"}, []string{"serf"}, []string{"dc-1", "dc-2"})
 
-			endpoints, err := buildEndpoints(context.TODO(), writeNamespace, nil, consulService, v1.UpstreamList{upstream, upstream2})
+			eds := NewPlugin(mock_consul.NewMockConsulWatcher(ctrl), mock_consul2.NewMockDnsResolver(ctrl), nil)
+			endpoints, err := eds.BuildEndpoints(context.TODO(), writeNamespace, nil, consulService, v1.UpstreamList{upstream, upstream2})
 			Expect(err).To(BeNil())
 			Expect(endpoints).To(HaveLen(1))
 			Expect(endpoints[0]).To(matchers.BeEquivalentToDiff(&v1.Endpoint{
@@ -671,7 +673,8 @@ var _ = Describe("Consul EDS", func() {
 			mockDnsResolver.EXPECT().Resolve(gomock.Any(), gomock.Any()).Do(func(context.Context, string) {
 				fmt.Fprint(GinkgoWriter, "Initial resolve called.")
 			}).Return(initialIps, nil).Times(1) // once for each consul service
-			endpoints, err := buildEndpoints(context.TODO(), writeNamespace, mockDnsResolver, consulService, v1.UpstreamList{upstream})
+			eds := NewPlugin(mock_consul.NewMockConsulWatcher(ctrl), mock_consul2.NewMockDnsResolver(ctrl), nil)
+			endpoints, err := eds.BuildEndpoints(context.TODO(), writeNamespace, mockDnsResolver, consulService, v1.UpstreamList{upstream})
 			Expect(err).To(BeNil())
 			Expect(endpoints).To(HaveLen(1))
 			Expect(endpoints[0]).To(matchers.BeEquivalentToDiff(&v1.Endpoint{
