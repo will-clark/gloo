@@ -43,7 +43,6 @@ func EnableMTLS(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cob
 		},
 	}
 	pflags := cmd.PersistentFlags()
-	flagutils.AddOutputFlag(pflags, &opts.Top.Output)
 	flagutils.AddUpstreamFlag(pflags, &opts.Istio.Upstream)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd

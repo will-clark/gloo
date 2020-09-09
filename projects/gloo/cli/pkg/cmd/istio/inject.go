@@ -8,7 +8,6 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/istio/sidecars"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/go-utils/cliutils"
 
@@ -73,7 +72,6 @@ func Inject(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.C
 		},
 	}
 	pflags := cmd.PersistentFlags()
-	flagutils.AddOutputFlag(pflags, &opts.Top.Output)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	addIstioNamespaceFlag(pflags, &opts.Istio.Namespace)
 	return cmd

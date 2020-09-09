@@ -7,7 +7,6 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/go-utils/cliutils"
 
@@ -46,8 +45,6 @@ func Uninject(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra
 			return nil
 		},
 	}
-	pflags := cmd.PersistentFlags()
-	flagutils.AddOutputFlag(pflags, &opts.Top.Output)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }
