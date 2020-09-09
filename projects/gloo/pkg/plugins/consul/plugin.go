@@ -98,11 +98,10 @@ func (p *plugin) Init(params plugins.InitParams) error {
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
 	consulSpec, ok := in.UpstreamType.(*v1.Upstream_Consul)
-	spec := consulSpec.Consul
-
 	if !ok {
 		return nil
 	}
+	spec := consulSpec.Consul
 
 	// consul upstreams use EDS
 	xds.SetEdsOnCluster(out)
