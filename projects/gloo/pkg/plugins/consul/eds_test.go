@@ -697,6 +697,27 @@ var _ = Describe("Consul EDS", func() {
 			}))
 		})
 
+		It("Adds supplied upstreams to the plugin's https map if using the default https port", func() {
+			consulService := &consulapi.CatalogService{
+				ServiceID:   "my-svc-0",
+				ServiceName: "my-svc",
+				Address:     "127.0.0.1",
+				ServicePort: 443,
+				Datacenter:  "dc-1",
+				ServiceTags: []string{"tag-1", "tag-3", "http"},
+				ModifyIndex: 9876,
+			}
+			upstream := createTestFilteredUpstream("my-svc", "my-svc", []string{"tag-1", "tag-3"}, []string{"http"}, []string{"dc-1", "dc-2"})
+			// add another upstream so to test that tag2 is in the labels.
+			upstream2 := createTestFilteredUpstream("my-svc-2", "my-svc", []string{"tag-2"}, []string{"serf"}, []string{"dc-1", "dc-2"})
+
+			eds := NewPlugin(mock_consul.NewMockConsulWatcher(ctrl), mock_consul2.NewMockDnsResolver(ctrl), nil)
+			_, err := eds.BuildEndpoints(context.TODO(), writeNamespace, nil, consulService, v1.UpstreamList{upstream, upstream2})
+			Expect(err).To(BeNil())
+			Expect(eds.upstreamHttpsMap).To(HaveLen(2))
+			Expect(eds.upstreamHttpsMap).To(HaveKey(upstream.Metadata.Ref().Key()))
+			Expect(eds.upstreamHttpsMap).To(HaveKey(upstream2.Metadata.Ref().Key()))
+		})
 	})
 })
 

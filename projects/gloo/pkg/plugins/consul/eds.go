@@ -313,13 +313,12 @@ func (p *plugin) buildEndpoint(namespace, address, ipAddress string, service *co
 			Hostname: hostname,
 		}
 	}
-	// check here
+	// if the consul service is using the default https port, then make sure we use https for the associate upstreams.
 	if service.ServicePort == 443 {
 		p.mapLock.Lock()
 		defer p.mapLock.Unlock()
 		for _, upstream := range upstreams {
-			//todo make thread safe
-			p.upstreamHttpsMap[upstream.Metadata.Namespace + upstream.Metadata.Name] = true
+			p.upstreamHttpsMap[upstream.Metadata.Ref().Key()] = true
 		}
 	}
 
