@@ -106,11 +106,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 
 	// consul upstreams use EDS
 	xds.SetEdsOnCluster(out)
-
-	out.ClusterDiscoveryType = &envoyapi.Cluster_Type{
-		Type: envoyapi.Cluster_STATIC,
-	}
-
+	
 	p.mapLock.RLock()
 	defer p.mapLock.RUnlock()
 	mapVal, isMapped := p.upstreamHttpsMap[in.Metadata.Ref().Key()]
